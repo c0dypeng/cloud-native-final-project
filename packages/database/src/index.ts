@@ -1,2 +1,2 @@
-// Re-export all database types
-export * from "./database.types.js";
+export * from "./schema/index.js";
+export * from "./db.js";

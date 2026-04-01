@@ -1,390 +1,288 @@
-# shadcn-ui + Supabase + Docker Template
+# Employee Safety & Response System
 
-A production-ready monorepo template featuring **shadcn/ui**, **Supabase authentication**, and **Docker** setup. Perfect for quickly starting new projects with modern tooling and best practices.
+A cloud-native emergency safety reporting system built with Next.js, Express, PostgreSQL, and Kubernetes.
 
-## ✨ Features
+When emergencies happen (earthquakes, fires, etc.), admins create events and employees report their safety status. Managers monitor their team in real time.
 
-- 🎨 **[shadcn/ui](https://ui.shadcn.com/)** - Beautiful, accessible component library
-- 🔐 **Supabase Auth** - Complete authentication setup with email/password and OAuth
-- 🐳 **Docker** - Full Docker support for development and production
-- 📦 **Monorepo** - Turborepo-powered monorepo with shared packages
-- ⚡ **Next.js 16** - Latest Next.js with App Router and React Server Components
-- 🎯 **TypeScript** - Full type safety across the entire codebase
-- 🔥 **Turbopack** - Lightning-fast development builds
-- 🎭 **Dark Mode** - Built-in theme switching
-- 📱 **Responsive** - Mobile-first responsive design
-- 🛡️ **Type-Safe Database** - Generated TypeScript types from Supabase schema
-
-## 🏗️ Project Structure
+## Project Structure
 
 ```
 ├── apps/
-│   ├── web/              # Main Next.js web application
-│   ├── admin/            # Admin dashboard (Next.js)
-│   └── server/           # Express.js API server
+│   ├── web/               # Employee & manager frontend (Next.js, port 3000)
+│   ├── admin/             # Admin dashboard (Next.js, port 3001)
+│   └── server/            # REST API (Express, port 4000)
 ├── packages/
-│   ├── ui/               # shadcn/ui components (shared)
-│   ├── database/         # Supabase database types
-│   ├── eslint-config/    # Shared ESLint configuration
-│   └── typescript-config/# Shared TypeScript configuration
-├── docker-compose.yml    # Production Docker setup
-├── docker-compose.dev.yml # Development Docker setup
-└── turbo.json            # Turborepo configuration
+│   ├── database/          # Drizzle ORM schema, migrations, seed
+│   ├── ui/                # Shared shadcn/ui components
+│   ├── eslint-config/
+│   └── typescript-config/
+├── k8s/                   # Kubernetes manifests
+├── docker-compose.yml     # Production Docker setup
+├── docker-compose.dev.yml # Development Docker setup (hot-reload)
+├── plan.md                # Full project plan and team split
+└── Makefile               # Convenience commands
 ```
 
-## 📋 Prerequisites
+## Prerequisites
 
-- **Node.js** >= 20
-- **Bun** >= 1.0 (install via `curl -fsSL https://bun.sh/install | bash`)
-- **Docker** & **Docker Compose** (optional, for containerized development)
-- **Supabase Account** (for authentication)
+- [Bun](https://bun.sh) >= 1.3 — `curl -fsSL https://bun.sh/install | bash`
+- [Docker](https://docs.docker.com/get-docker/) & Docker Compose
+- `make` (pre-installed on macOS/Linux)
 
-## 🚀 Quick Start
+---
 
-> **⚠️ Important**: Before building or running Docker, you must create a `.env` file with your Supabase credentials. See step 2 below.
+## Development Model
 
-### 1. Clone and Install
+**Docker runs the database. `bun dev` runs the apps.** That's it.
+
+```
+┌─────────────────────────────────────────────────────┐
+│  Docker (always running)          bun dev            │
+│  ┌─────────────┐                  ┌───────────────┐  │
+│  │  postgres   │ ←── connects ──  │  apps/server  │  │
+│  │  pgbouncer  │                  │  apps/web     │  │
+│  └─────────────┘                  │  apps/admin   │  │
+│                                   └───────────────┘  │
+└─────────────────────────────────────────────────────┘
+```
+
+---
+
+## First-Time Setup
+
+### 1. Install dependencies
 
 ```bash
-git clone <your-repo-url>
-cd shadcn-ui-supabase-docker-template
 bun install
 ```
 
-### 2. Set Up Environment Variables
-
-**⚠️ IMPORTANT: You must set up environment variables before building or running Docker.**
-
-Create a `.env` file in the root directory:
+### 2. Create environment file
 
 ```bash
 cp .env.example .env
 ```
 
-Then edit `.env` and add your Supabase credentials (see step 3).
-
-### 3. Set Up Supabase
-
-1. Create a new project at [supabase.com](https://supabase.com)
-2. Get your project URL and API keys from **Project Settings → API**
-3. Update the `.env` file with your credentials:
+Fill in the required values:
 
 ```env
-SUPABASE_URL=https://your-project-id.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-SUPABASE_ANON_KEY=your-anon-key
-NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+# Postgres password — pick anything for local dev
+POSTGRES_PASSWORD=devpassword
+
+# JWT secret — generate with: openssl rand -hex 64
+JWT_SECRET=your-64-char-random-string
+
+# Seed credentials for the first admin account
+SEED_ADMIN_USERNAME=admin
+SEED_ADMIN_PASSWORD=changeme
 ```
 
-### 4. Configure App-Specific Environment Variables (Optional)
+The rest of `.env.example` has sensible defaults for local dev.
 
-For local development without Docker, you can also create `.env.local` files in each app directory:
-
-**`apps/web/.env.local`** (optional for local dev)
-```env
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-NEXT_PUBLIC_SITE_URL=http://localhost:3000
-```
-
-**`apps/admin/.env.local`** (optional for local dev)
-```env
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-ADMIN_PASSWORD_HASH=your_bcrypt_password_hash
-```
-
-**`apps/server/.env`** (optional for local dev)
-```env
-SUPABASE_URL=your_supabase_project_url
-SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
-SUPABASE_ANON_KEY=your_supabase_anon_key
-PORT=4000
-CORS_ORIGIN=http://localhost:3000
-```
-
-### 5. Generate Admin Password Hash
-
-For the admin dashboard, generate a password hash:
+### 3. Start the database (Docker)
 
 ```bash
-cd apps/admin
-bun generate:password
-# Enter your password when prompted
-# Copy the generated hash to ADMIN_PASSWORD_HASH in .env.local
+docker compose -f docker-compose.dev.yml up postgres pgbouncer -d
 ```
 
-### 6. Run Development Servers
+Verify it's healthy:
 
-**Option A: Local Development**
+```bash
+docker compose -f docker-compose.dev.yml ps
+# postgres should show "healthy"
+```
+
+This is the **only Docker step you need for daily development.** Keep it running in the background.
+
+### 4. Run database migrations (one-time)
+
+Creates all tables. Only needed once per environment (or after `make clean`).
+
+```bash
+make migrate DATABASE_URL=postgresql://safety:devpassword@localhost:5432/safetydb
+```
+
+### 5. Seed the initial admin account (one-time)
+
+```bash
+make seed DATABASE_URL=postgresql://safety:devpassword@localhost:5432/safetydb
+```
+
+Default credentials: `admin` / `changeme` (change via `SEED_ADMIN_USERNAME` / `SEED_ADMIN_PASSWORD` in `.env`).
+
+### 6. Start the apps
+
 ```bash
 bun dev
 ```
 
-This starts all apps in development mode:
-- Web app: http://localhost:3000
+- Web (employees/managers): http://localhost:3000
 - Admin dashboard: http://localhost:3001
 - API server: http://localhost:4000
 
-**Option B: Docker Development**
+The server reads `DATABASE_URL` and `JWT_SECRET` from your `.env` (or `apps/server/.env`).
+
+---
+
+## Day-to-Day Development
+
 ```bash
-make dev-docker
-# or
-docker-compose -f docker-compose.dev.yml up
+# Terminal 1 — keep the DB running (if not already)
+docker compose -f docker-compose.dev.yml up postgres pgbouncer -d
+
+# Terminal 2 — start all apps with hot-reload
+bun dev
 ```
 
-## 🐳 Docker Setup
+Data persists in a Docker volume across restarts. You only need to re-run `make migrate` + `make seed` if you run `make clean` (which wipes the volume).
 
-### Development
+### Full Docker dev (optional)
+
+If you want all services in containers (e.g. to test the production setup locally):
 
 ```bash
 make dev-docker
 ```
 
-This starts all services with hot-reload enabled. Source code is mounted as volumes for instant updates.
+Same URLs. Source code is volume-mounted so edits hot-reload automatically.
 
-### Production
+---
+
+## Schema Changes
+
+When you modify files in `packages/database/src/schema/`:
 
 ```bash
-# Build and start all services
+# 1. Generate a new migration SQL file
+cd packages/database
+DATABASE_URL=postgresql://safety:devpassword@localhost:5432/safetydb bun run db:generate
+
+# 2. Apply the new migration
+make migrate DATABASE_URL=postgresql://safety:devpassword@localhost:5432/safetydb
+```
+
+Drizzle tracks which migrations have been applied — running `migrate` is always safe and idempotent.
+
+---
+
+## Production (Docker)
+
+```bash
+# Build and start all services (detached)
 make up
 
-# Stop services
+# Stop
 make down
 
 # View logs
 make logs
-make logs-web      # Web app logs
-make logs-admin    # Admin logs
-make logs-server   # API server logs
+make logs-server
+make logs-web
+make logs-admin
+make logs-postgres
 
-# Clean up everything
+# Full reset (destroys all data)
 make clean
 ```
 
-### Environment Variables for Docker
+Make sure your `.env` at the root has all required values (see `.env.example`).
 
-**The `.env` file in the root directory is required for Docker builds.**
+---
 
-If you haven't created it yet, copy from the example:
+## Code Quality
 
-```bash
-cp .env.example .env
-```
-
-Then edit `.env` and add your actual Supabase credentials:
-
-```env
-# Supabase
-SUPABASE_URL=your_supabase_project_url
-SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
-SUPABASE_ANON_KEY=your_supabase_anon_key
-
-# Public URLs
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-NEXT_PUBLIC_API_URL=http://localhost:4000
-NEXT_PUBLIC_SITE_URL=http://localhost:3000
-
-# Admin
-ADMIN_PASSWORD_HASH=your_bcrypt_password_hash
-
-# Server
-CORS_ORIGIN=http://localhost:3000
-```
-
-## 📝 Available Scripts
-
-### Root Level
+Run these before every commit:
 
 ```bash
-bun dev           # Start all apps in development mode
-bun run build     # Build all apps for production
-bun lint          # Lint all packages
-bun typecheck     # Type check all packages
-bun format        # Format code with Prettier
+bun lint && bun typecheck && bun run build
 ```
 
-### Individual Apps
+---
 
+## Available Scripts
+
+### Root
 ```bash
-# Web app
+bun dev          # All apps in dev mode
+bun run build    # Build all apps
+bun lint         # Lint all packages
+bun typecheck    # Type check all packages
+bun format       # Prettier format
+```
+
+### Individual apps
+```bash
 bun run --filter web dev
-bun run --filter web build
-
-# Admin app
 bun run --filter admin dev
-bun run --filter admin build
-
-# Server
 bun run --filter server dev
-bun run --filter server build
 ```
 
-## 🎨 Adding shadcn/ui Components
+### Database (`packages/database`)
+```bash
+bun run db:generate   # Generate migration from schema changes
+bun run db:migrate    # Apply pending migrations
+bun run db:push       # Push schema directly (dev only, skips migration files)
+bun run db:studio     # Open Drizzle Studio (visual DB browser)
+bun run seed          # Insert initial admin account
+```
 
-Components are managed in the `packages/ui` package. To add new components:
+---
+
+## Adding shadcn/ui Components
 
 ```bash
 cd packages/ui
 npx shadcn@latest add [component-name]
 ```
 
-Components will be automatically available to all apps via `@workspace/ui`.
-
-## 🗄️ Database Types
-
-This template includes type-safe database access. When you create tables in Supabase, regenerate types:
-
-```bash
-npx supabase gen types typescript \
-  --project-id "your-project-id" \
-  --schema public > packages/database/src/database.types.ts
-```
-
-Then use them in your code:
-
-```typescript
-import type { Database } from "@workspace/database/types";
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient<Database>(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_ANON_KEY!,
-);
-
-// Full type safety and autocomplete!
-const { data } = await supabase.from("your_table").select("*");
-```
-
-## 🔐 Authentication
-
-### Web App (User Authentication)
-
-The web app uses Supabase Auth with:
-- Email/password authentication
-- Google OAuth (configured)
-- Protected routes via middleware
-- Server-side session management
-
-**Login**: `/login`  
-**Signup**: `/signup`  
-**Dashboard**: `/dashboard` (protected)
-
-### Admin Dashboard
-
-The admin dashboard uses password-based authentication:
-- Simple password login
-- Session management via cookies
-- Protected routes
-
-**Login**: `/login` (admin)
-
-## 🏗️ Building for Production
-
-### Local Build
-
-```bash
-bun run build
-```
-
-### Docker Build
-
-```bash
-docker-compose build
-docker-compose up -d
-```
-
-All services will be available:
-- Web: http://localhost:3000
-- Admin: http://localhost:3001
-- API: http://localhost:4000
-
-## 📦 Tech Stack
-
-- **Framework**: Next.js 16 (App Router)
-- **Language**: TypeScript 5.7+
-- **Styling**: Tailwind CSS
-- **UI Components**: shadcn/ui (Base UI)
-- **Authentication**: Supabase Auth
-- **Database**: Supabase (PostgreSQL)
-- **API**: Express.js
-- **Monorepo**: Turborepo
-- **Package Manager**: Bun
-- **Containerization**: Docker & Docker Compose
-- **Code Quality**: ESLint, Prettier
-
-## 🛠️ Customization
-
-### Adding New Pages
-
-1. Create a new route in `apps/web/app/`
-2. Use components from `@workspace/ui`
-3. Add navigation items in `apps/web/components/layout/app-sidebar.tsx`
-
-### Adding API Routes
-
-1. Create controllers in `apps/server/src/controllers/`
-2. Add routes in `apps/server/src/routes/index.ts`
-3. Use typed Supabase client from `apps/server/src/lib/supabase.ts`
-
-### Theming
-
-The template includes dark mode support via `next-themes`. Customize colors in:
-- `packages/ui/src/styles/globals.css` (Tailwind theme)
-- Individual component files for component-specific styling
-
-## 🔧 Troubleshooting
-
-### Docker Build Fails with "Missing environment variables"
-
-**Error**: `Error: Missing environment variables: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY`
-
-**Solution**: Create a `.env` file in the root directory:
-
-```bash
-cp .env.example .env
-```
-
-Then edit `.env` and add your Supabase credentials. Docker Compose reads environment variables from the root `.env` file.
-
-### Build Succeeds but App Doesn't Work
-
-Make sure you've:
-1. Created a Supabase project
-2. Added your credentials to `.env` (for Docker) or app-specific `.env.local` files (for local dev)
-3. Generated an admin password hash if using the admin dashboard
-
-### Port Already in Use
-
-If ports 3000, 3001, or 4000 are already in use:
-
-- **Local development**: Stop other services using those ports, or modify the ports in `package.json` scripts
-- **Docker**: Modify port mappings in `docker-compose.yml` or `docker-compose.dev.yml`
-
-## 📚 Learn More
-
-- [Next.js Documentation](https://nextjs.org/docs)
-- [Supabase Documentation](https://supabase.com/docs)
-- [shadcn/ui Documentation](https://ui.shadcn.com/)
-- [Turborepo Documentation](https://turbo.build/repo/docs)
-- [Docker Documentation](https://docs.docker.com/)
-
-## 🤝 Contributing
-
-This is a template repository. Feel free to fork and customize for your needs!
-
-## 📄 License
-
-MIT
-
-## 🙏 Acknowledgments
-
-- [shadcn](https://twitter.com/shadcn) for the amazing UI components
-- [Supabase](https://supabase.com) for the backend infrastructure
-- [Vercel](https://vercel.com) for Next.js and Turborepo
+Components are automatically available to all apps via `@workspace/ui/components/[name]`.
 
 ---
 
-**Happy coding! 🚀**
+## Adding API Routes (for Person 1)
+
+1. Create `apps/server/src/controllers/your-feature.controller.ts`
+2. Create `apps/server/src/routes/your-feature.routes.ts`
+3. Register in `apps/server/src/routes/index.ts`
+
+Auth middleware is already set up — use `requireAuth`, `requireRole`, or `requireAdmin` from `middleware/auth.middleware.ts`.
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Frontend | Next.js 16 (App Router), React 19, TypeScript |
+| UI | shadcn/ui, Tailwind CSS v4 |
+| API | Express 4, TypeScript |
+| Database | PostgreSQL 17, Drizzle ORM |
+| Connection pooling | PgBouncer |
+| Auth | Custom JWT (`jsonwebtoken` + `bcryptjs`) |
+| Logging | pino (structured JSON) |
+| Metrics | prom-client (Prometheus) |
+| Monorepo | Turborepo + Bun workspaces |
+| Containers | Docker + Docker Compose |
+| Orchestration | Kubernetes (manifests in `k8s/`) |
+
+---
+
+## Troubleshooting
+
+**`DATABASE_URL` connection refused**
+Make sure Postgres is running: `docker compose -f docker-compose.dev.yml up postgres -d`
+
+**Tables don't exist / relation not found**
+Run migrations: `make migrate DATABASE_URL=...`
+
+**Admin login fails**
+Make sure you ran `make seed`. Default: `admin` / `changeme`.
+
+**Port already in use**
+Stop whatever is on 3000/3001/4000, or change port mappings in `docker-compose.dev.yml`.
+
+**`make clean` then nothing works**
+Volumes were wiped — redo steps 4 and 5 (migrate + seed).
+
+---
+
+For the full project architecture, team split, and feature plan see [plan.md](./plan.md).

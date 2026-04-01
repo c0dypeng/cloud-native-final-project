@@ -1,5 +1,47 @@
 services:
-  # Express Backend Server (Development)
+  postgres:
+    image: postgres:17-alpine
+    container_name: app-postgres-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: safetydb
+      POSTGRES_USER: safety
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-devpassword}
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U safety -d safetydb"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  pgbouncer:
+    image: bitnami/pgbouncer:latest
+    container_name: app-pgbouncer-dev
+    restart: unless-stopped
+    environment:
+      POSTGRESQL_HOST: postgres
+      POSTGRESQL_PORT: 5432
+      POSTGRESQL_DATABASE: safetydb
+      POSTGRESQL_USERNAME: safety
+      POSTGRESQL_PASSWORD: ${POSTGRES_PASSWORD:-devpassword}
+      PGBOUNCER_DATABASE: safetydb
+      PGBOUNCER_POOL_MODE: transaction
+      PGBOUNCER_MAX_CLIENT_CONN: 100
+      PGBOUNCER_DEFAULT_POOL_SIZE: 10
+    ports:
+      - "6432:6432"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-network
+
   server:
     build:
       context: .
@@ -7,26 +49,28 @@ services:
     container_name: app-server-dev
     ports:
       - "4000:4000"
-    env_file:
-      - ./apps/server/.env
     environment:
       - NODE_ENV=development
       - PORT=4000
+      - DATABASE_URL=postgresql://safety:${POSTGRES_PASSWORD:-devpassword}@pgbouncer:6432/safetydb
+      - JWT_SECRET=${JWT_SECRET:-dev-jwt-secret-change-in-production}
+      - JWT_EXPIRES_IN=8h
+      - CORS_ORIGIN=http://localhost:3000
     volumes:
-      # Mount source code for hot reloading
       - ./apps/server:/app/apps/server
       - ./packages:/app/packages
       - ./package.json:/app/package.json
       - ./bun.lock:/app/bun.lock
       - ./turbo.json:/app/turbo.json
-      # Preserve node_modules
       - server-node-modules:/app/node_modules
       - server-app-node-modules:/app/apps/server/node_modules
+    depends_on:
+      pgbouncer:
+        condition: service_started
     networks:
       - app-network
     command: bun run --filter server dev
 
-  # Web Frontend App (Development)
   web:
     build:
       context: .
@@ -42,17 +86,15 @@ services:
       - API_URL=http://server:4000
       - NEXT_PUBLIC_API_URL=http://localhost:4000
       - NEXT_PUBLIC_SITE_URL=http://localhost:3000
+      - JWT_SECRET=${JWT_SECRET:-dev-jwt-secret-change-in-production}
     volumes:
-      # Mount source code for hot reloading
       - ./apps/web:/app/apps/web
       - ./packages:/app/packages
       - ./package.json:/app/package.json
       - ./bun.lock:/app/bun.lock
       - ./turbo.json:/app/turbo.json
-      # Preserve node_modules
       - web-node-modules:/app/node_modules
       - web-app-node-modules:/app/apps/web/node_modules
-      # Next.js cache
       - web-next-cache:/app/apps/web/.next
     networks:
       - app-network
@@ -60,7 +102,6 @@ services:
       - server
     command: bun run --filter web dev
 
-  # Admin Frontend App (Development)
   admin:
     build:
       context: .
@@ -76,16 +117,13 @@ services:
       - API_URL=http://server:4000
       - NEXT_PUBLIC_API_URL=http://localhost:4000
     volumes:
-      # Mount source code for hot reloading
       - ./apps/admin:/app/apps/admin
       - ./packages:/app/packages
       - ./package.json:/app/package.json
       - ./bun.lock:/app/bun.lock
       - ./turbo.json:/app/turbo.json
-      # Preserve node_modules
       - admin-node-modules:/app/node_modules
       - admin-app-node-modules:/app/apps/admin/node_modules
-      # Next.js cache
       - admin-next-cache:/app/apps/admin/.next
     networks:
       - app-network
@@ -99,6 +137,7 @@ networks:
     name: app-network-dev
 
 volumes:
+  postgres_dev_data:
   server-node-modules:
   server-app-node-modules:
   web-node-modules:

@@ -4,11 +4,26 @@
   "type": "module",
   "private": true,
   "exports": {
-    "./types": "./src/database.types.ts",
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./types": "./src/index.ts"
+  },
+  "scripts": {
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio",
+    "seed": "tsx src/seed.ts"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "drizzle-orm": "^0.45.2",
+    "postgres": "^3.4.8"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@workspace/typescript-config": "workspace:*",
+    "drizzle-kit": "^0.31.10",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.2"
   }
 }
