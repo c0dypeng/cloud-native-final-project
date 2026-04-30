@@ -3,12 +3,12 @@
 import Link from "next/link";
 import {
   Settings,
-  Squircle,
+  ShieldCheck,
   Home,
 } from "lucide-react";
 import { NavMain } from "@/components/layout/nav-main";
 import { NavSecondary } from "@/components/layout/nav-secondary";
-import { NavUser } from "@/components/layout/nav-user";
+import { NavUser, type NavUserData } from "@/components/layout/nav-user";
 import {
   Sidebar,
   SidebarContent,
@@ -35,18 +35,20 @@ const SECONDARY_NAV_ITEMS = [
   },
 ] as const;
 
-interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {}
+interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
+  user: NavUserData;
+}
 
-export function AppSidebar({ ...props }: AppSidebarProps) {
+export function AppSidebar({ user, ...props }: AppSidebarProps) {
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
-              <Link href="/">
-                <Squircle className="size-5" />
-                <span className="text-base font-semibold">App</span>
+              <Link href="/dashboard">
+                <ShieldCheck className="size-5" />
+                <span className="text-base font-semibold">員工安全回報</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -57,7 +59,7 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
         <NavSecondary items={SECONDARY_NAV_ITEMS} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser />
+        <NavUser user={user} />
       </SidebarFooter>
     </Sidebar>
   );
