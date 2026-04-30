@@ -1,15 +1,14 @@
 # Web App
 
-Next.js frontend for Mars LINE messaging platform with Supabase authentication.
+Next.js 16 frontend for the Employee Safety & Response system. Employees use this app to log in and submit their safety status during incidents.
 
-## Features
+## Stack
 
-- ✅ **Next.js 16 App Router** - Modern React Server Components
-- ✅ **Supabase Auth (SSR)** - 2025 best practices with `@supabase/ssr`
-- ✅ **Type-Safe Database** - Full TypeScript types via `@workspace/database`
-- ✅ **Server Actions** - Modern form handling without API routes
-- ✅ **Middleware Auth** - Automatic token refresh on every request
-- ✅ **Theme Toggle** - Light/Dark mode support
+- **Next.js 16 App Router** with React Server Components
+- **Custom JWT cookie auth** — `jose`-based, validates tokens issued by `apps/server`
+- **Self-hosted Postgres + Drizzle** via `@workspace/database` (no Supabase)
+- **shadcn/ui** components from `@workspace/ui`
+- **next-themes** light/dark mode
 
 ## Getting Started
 
@@ -17,248 +16,97 @@ Next.js frontend for Mars LINE messaging platform with Supabase authentication.
 
 - Node.js 20+
 - Bun
-- Supabase project (see database setup)
+- Running `apps/server` (default port 4000) — see root `README.md` or `make dev-docker`
 
 ### Environment Setup
 
-1. **Copy environment variables:**
+```bash
+cp apps/web/.env.example apps/web/.env.local
+```
 
-   ```bash
-   cp .env.example .env.local
-   ```
-
-2. **Update `.env.local` with your Supabase credentials:**
-
-   ```env
-   NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
-   ```
-
-   Get these from: [Supabase Dashboard](https://supabase.com/dashboard) → Project Settings → API
+Fill in `JWT_SECRET` (must match `apps/server`'s value) and adjust API URLs if needed.
 
 ### Development
 
 ```bash
-# From the root of the monorepo
-bun dev
-
-# Or run just the web app
-bun run --filter web dev
+# From repo root
+bun dev                          # all apps
+bun run --filter web dev         # web only
 ```
 
-Open [http://localhost:3000](http://localhost:3000)
+Open [http://localhost:3000](http://localhost:3000).
 
 ### Build
 
 ```bash
-# From the root of the monorepo
-bun run build
-
-# Or build just the web app
 bun run --filter web build
 ```
 
 ## Authentication Flow
 
-### 2025 Best Practices
-
-This app follows Supabase's official Next.js SSR authentication best practices:
-
-1. **Two Client Types:**
-   - `createBrowserClient()` - Client Components (browser)
-   - `createServerClient()` - Server Components, Server Actions, Route Handlers
-
-2. **Middleware Token Refresh:**
-   - Automatically refreshes expired auth tokens before page loads
-   - Uses `supabase.auth.getUser()` (NOT `getSession()`) for security
-
-3. **Server Actions:**
-   - Login/Signup handled via Server Actions (no API routes)
-   - Form submission with progressive enhancement
-
-### Auth Files Structure
+The web app uses an httpOnly JWT cookie issued by `apps/server`'s `/api/auth/login` endpoint.
 
 ```
-app/
-├── login/
-│   ├── page.tsx          # Login/Signup form
-│   └── actions.ts        # Server Actions (login, signup)
-├── auth/
-│   ├── confirm/
-│   │   └── route.ts      # Email confirmation endpoint
-│   └── signout/
-│       └── route.ts      # Signout handler
-└── error/
-    └── page.tsx          # Auth error page
-
-utils/supabase/
-├── client.ts             # Browser client (Client Components)
-├── server.ts             # Server client (Server Components/Actions)
-└── middleware.ts         # Session refresh logic
-
-middleware.ts             # Next.js middleware entry point
+┌────────────┐  POST /api/auth/login   ┌──────────────┐
+│  Browser   │ ──────────────────────▶ │   Server     │
+│            │  { email, password }    │ (Express)    │
+│            │ ◀────────────────────── │              │
+│            │  Set-Cookie: token=<JWT>│              │
+└────────────┘                         └──────────────┘
+       │
+       │  GET /dashboard  (cookie sent automatically)
+       ▼
+┌────────────┐
+│ Next.js    │  middleware.ts checks cookie → redirects if missing
+│ web app    │  RSC calls getSession() → verifies JWT locally with jose
+│            │  Server Actions call apiFetch() → forwards token as Bearer
+└────────────┘
 ```
 
-### Usage Examples
+### Key files
 
-**Server Component (Recommended):**
-
-```typescript
-import { createClient } from '@/utils/supabase/server';
-
-export default async function Page() {
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect('/login');
-  }
-
-  // Fetch data with full type safety
-  const { data: teams } = await supabase
-    .from('team')
-    .select('*');
-
-  return <div>Welcome {user.email}</div>;
-}
+```
+apps/web/
+├── middleware.ts                # Gates /dashboard/* — redirects to /login if no cookie
+├── lib/
+│   ├── auth/
+│   │   └── session.ts           # getSession (verify JWT) + getCurrentUser (calls /api/auth/me)
+│   └── api.ts                   # apiFetch — server-side fetch with cookie→Bearer forwarding
+├── app/
+│   ├── login/
+│   │   ├── page.tsx             # Email + password form
+│   │   └── actions.ts           # loginAction / logoutAction (server actions)
+│   ├── dashboard/
+│   │   ├── layout.tsx           # Sidebar + header (loads current user)
+│   │   ├── page.tsx             # Active event + SafetyReportCard
+│   │   └── actions.ts           # submitReport server action
+│   └── error/page.tsx           # Auth error page
+└── components/dashboard/        # ActiveEventCard, SafetyReportCard
 ```
 
-**Client Component:**
+### Why local JWT verification?
 
-```typescript
-'use client';
-
-import { createClient } from '@/utils/supabase/client';
-import { useEffect, useState } from 'react';
-
-export default function ClientComponent() {
-  const supabase = createClient();
-  const [user, setUser] = useState(null);
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user);
-    });
-  }, []);
-
-  return <div>{user?.email}</div>;
-}
-```
-
-**Server Action:**
-
-```typescript
-"use server";
-
-import { createClient } from "@/utils/supabase/server";
-import { revalidatePath } from "next/cache";
-
-export async function updateProfile(formData: FormData) {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    throw new Error("Not authenticated");
-  }
-
-  const { error } = await supabase
-    .from("user")
-    .update({ full_name: formData.get("name") })
-    .eq("id", user.id);
-
-  revalidatePath("/profile");
-}
-```
-
-## Type Safety
-
-The app uses `@workspace/database` for full type safety with Supabase:
-
-```typescript
-import type { Database } from "@workspace/database/types";
-
-// Extract typed table definitions
-type Team = Database["public"]["Tables"]["team"]["Row"];
-type TeamInsert = Database["public"]["Tables"]["team"]["Insert"];
-
-// All queries have full IntelliSense and type checking
-const { data } = await supabase.from("team").select("*");
-// data is Team[] with full autocomplete
-```
-
-## Database Tables
-
-All tables are fully typed via `@workspace/database`:
-
-- `user` - User profiles (extends auth.users)
-- `team` - Teams
-- `team_member` - Team memberships with roles (owner/admin/member)
-- `team_credential` - LINE API credentials
-- `conversation` - LINE chat conversations (user/group/room)
-- `message` - Chat messages with reply threading
-- `agent` - AI agents with prompts and settings
-- `agent_conversation` - Agent assignments to conversations
-- `document` - Knowledge base documents
-- `chunk` - Document chunks with vector embeddings (1536 dimensions)
-
-## Security
-
-**IMPORTANT:** Always use `supabase.auth.getUser()` in server code (middleware, Server Components, Server Actions, Route Handlers).
-
-❌ **NEVER** trust `supabase.auth.getSession()` in server code - it can be spoofed via cookies!
-
-✅ **USE** `supabase.auth.getUser()` - validates the token with Supabase Auth server every time
-
-## Email Confirmation Setup
-
-To support email confirmation, update the Supabase email template:
-
-1. Go to [Auth templates](https://supabase.com/dashboard/project/_/auth/templates) in your Supabase dashboard
-2. Select **Confirm signup** template
-3. Change `{{ .ConfirmationURL }}` to:
-   ```
-   {{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email
-   ```
+Verifying the token in `getSession()` with `jose` (using the shared `JWT_SECRET`) avoids an HTTP round-trip to `/api/auth/me` on every Server Component render. We still call `/api/auth/me` once in `getCurrentUser()` when we need fields not in the JWT (e.g. the user's `name`).
 
 ## Routes
 
-- `/` - Home page (shows auth status)
-- `/login` - Login/Signup page
-- `/auth/confirm` - Email confirmation endpoint
-- `/auth/signout` - Sign out (POST only)
-- `/error` - Auth error page
-
-## Learn More
-
-- [Supabase SSR Guide](https://supabase.com/docs/guides/auth/server-side/nextjs)
-- [Next.js App Router](https://nextjs.org/docs/app)
-- [Next.js 16 Middleware](https://nextjs.org/docs/app/building-your-application/routing/middleware)
+- `/` — redirects to `/dashboard` if logged in, otherwise `/login`
+- `/login` — email + password login (web users only — admins use the admin app)
+- `/dashboard` — employee view: active event + safety reporting card
+- `/dashboard/team` — manager view (added by Person 3)
 
 ## Troubleshooting
 
-### "Missing Supabase environment variables"
+### "Unauthorized" on every request
 
-- Make sure `.env.local` file exists
-- Check that `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are set
-- Restart the dev server after updating `.env.local`
+- Verify `JWT_SECRET` in `apps/web/.env.local` matches `apps/server`'s value exactly.
+- Check that `apps/server` is reachable at `API_URL` (default `http://localhost:4000`).
 
-### Type errors with database
+### Logged out unexpectedly
 
-- Regenerate types: `npx supabase gen types typescript --project-id "your-project-id" --schema public > packages/database/src/database.types.ts`
-- Restart TypeScript server in your IDE
-- Run `bun typecheck` to verify
+- The JWT TTL is 8h (configurable via `JWT_EXPIRES_IN` on the server).
+- The cookie is `httpOnly` + `sameSite=lax` — make sure your browser preserves it across the redirect.
 
-### User logged out unexpectedly
+### Type errors after schema changes
 
-- Make sure middleware is properly configured
-- Check that `middleware.ts` is at the project root
-- Verify `utils/supabase/middleware.ts` returns `supabaseResponse` unchanged
-
-### Email confirmation not working
-
-- Update email template in Supabase dashboard (see "Email Confirmation Setup" above)
-- Check `/auth/confirm` route is accessible
+- Drizzle types live in `packages/database/src/schema`. Run `bun typecheck` from repo root.

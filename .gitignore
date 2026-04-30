@@ -46,5 +46,9 @@ bun-debug.log*
 
 # Claude Code local settings
 .claude/settings.local.json
+.claude/scheduled_tasks.lock
 
 .mcp.json
+
+# Personal planning notes (not part of the codebase)
+division of work.md
