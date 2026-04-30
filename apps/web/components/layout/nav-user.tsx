@@ -20,7 +20,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@workspace/ui/components/sidebar";
-import { logoutAction } from "@/app/login/actions";
+import { logout } from "@/utils/auth/actions";
 
 export interface NavUserData {
   name: string;
@@ -86,7 +86,7 @@ export function NavUser({ user }: { user: NavUserData }) {
               onSelect={(e) => {
                 e.preventDefault();
                 startTransition(() => {
-                  void logoutAction();
+                  void logout();
                 });
               }}
             >

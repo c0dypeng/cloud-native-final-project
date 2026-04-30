@@ -1,5 +1,4 @@
-import { cookies } from "next/headers";
-import { COOKIE_NAME } from "@/lib/auth/session";
+import { getToken } from "@/utils/auth/server";
 
 const API_URL = process.env.API_URL ?? "http://localhost:4000";
 
@@ -24,7 +23,7 @@ export async function apiFetch(
   path: string,
   init: RequestInit = {},
 ): Promise<Response> {
-  const token = (await cookies()).get(COOKIE_NAME)?.value;
+  const token = await getToken();
 
   const headers = new Headers(init.headers);
   if (token && !headers.has("authorization")) {

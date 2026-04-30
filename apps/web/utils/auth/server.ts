@@ -1,20 +1,16 @@
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { cache } from "react";
 import { jwtVerify } from "jose";
-import { apiFetch } from "@/lib/api";
 
 export const COOKIE_NAME = "token";
 
-export interface SessionUser {
+export interface CurrentUser {
   id: string;
   email: string;
   role: "employee" | "manager";
   departmentId: string | null;
   managerId: string | null;
-}
-
-export interface CurrentUser extends SessionUser {
-  name: string;
 }
 
 function getSecret(): Uint8Array {
@@ -25,8 +21,12 @@ function getSecret(): Uint8Array {
   return new TextEncoder().encode(secret);
 }
 
-export const getSession = cache(async (): Promise<SessionUser | null> => {
-  const token = (await cookies()).get(COOKIE_NAME)?.value;
+export const getToken = cache(async (): Promise<string | null> => {
+  return (await cookies()).get(COOKIE_NAME)?.value ?? null;
+});
+
+export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
+  const token = await getToken();
   if (!token) return null;
 
   try {
@@ -43,16 +43,10 @@ export const getSession = cache(async (): Promise<SessionUser | null> => {
   }
 });
 
-export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
-  const session = await getSession();
-  if (!session) return null;
-
-  const res = await apiFetch("/api/auth/me");
-  if (!res.ok) return null;
-
-  const data = (await res.json()) as { user?: { name?: string } };
-  return {
-    ...session,
-    name: data.user?.name ?? session.email,
-  };
-});
+export async function requireAuth(): Promise<CurrentUser> {
+  const user = await getCurrentUser();
+  if (!user) {
+    redirect("/login");
+  }
+  return user;
+}

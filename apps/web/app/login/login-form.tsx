@@ -4,12 +4,12 @@ import { useActionState } from "react";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
 import { SubmitButton } from "@/components/submit-button";
-import { loginAction, type LoginFormState } from "./actions";
+import { login, type LoginFormState } from "@/utils/auth/actions";
 
 const initialState: LoginFormState = {};
 
 export function LoginForm({ redirectTo }: { redirectTo?: string }) {
-  const [state, formAction] = useActionState(loginAction, initialState);
+  const [state, formAction] = useActionState(login, initialState);
 
   return (
     <form action={formAction} className="space-y-5">

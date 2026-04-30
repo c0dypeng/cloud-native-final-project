@@ -2,7 +2,7 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { COOKIE_NAME } from "@/lib/auth/session";
+import { COOKIE_NAME } from "@/utils/auth/server";
 import { validateEmail, validatePassword } from "@/lib/validation";
 
 const API_URL = process.env.API_URL ?? "http://localhost:4000";
@@ -13,7 +13,7 @@ export interface LoginFormState {
   email?: string;
 }
 
-export async function loginAction(
+export async function login(
   _prev: LoginFormState,
   formData: FormData,
 ): Promise<LoginFormState> {
@@ -58,13 +58,13 @@ export async function loginAction(
     sameSite: "lax",
     secure: IS_PROD,
     path: "/",
-    maxAge: 8 * 60 * 60, // 8h
+    maxAge: 8 * 60 * 60,
   });
 
   redirect(redirectTo.startsWith("/") ? redirectTo : "/dashboard");
 }
 
-export async function logoutAction() {
+export async function logout() {
   const token = (await cookies()).get(COOKIE_NAME)?.value;
   if (token) {
     await fetch(`${API_URL}/api/auth/logout`, {

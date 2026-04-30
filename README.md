@@ -257,7 +257,7 @@ Auth middleware is already set up — use `requireAuth`, `requireRole`, or `requ
 | API | Express 4, TypeScript |
 | Database | PostgreSQL 17, Drizzle ORM |
 | Connection pooling | PgBouncer |
-| Auth | Custom JWT (`jsonwebtoken` + `bcryptjs`) |
+| Auth | Custom JWT (server signs with `jsonwebtoken`, web verifies with `jose`, password hashing via `bcryptjs`) |
 | Logging | pino (structured JSON) |
 | Metrics | prom-client (Prometheus) |
 | Monorepo | Turborepo + Bun workspaces |

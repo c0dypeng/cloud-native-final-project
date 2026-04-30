@@ -244,7 +244,7 @@ apps/server/src/routes/index.ts  ← register all routers here
 - Remove `@supabase/ssr` and `@supabase/supabase-js` from `apps/web`
 - New `utils/auth/server.ts` — JWT cookie helpers (`getToken`, `getCurrentUser`, `requireAuth`)
 - New `utils/auth/actions.ts` — `login()` and `logout()` server actions
-- Rewrite `middleware.ts` — JWT cookie check (no more Supabase session refresh)
+- New `proxy.ts` — JWT cookie check (Next 16 renamed `middleware` → `proxy`; required convention as of 16.x)
 - Login page — email + password only, "帳戶由管理員建立" notice
 - Dashboard layout — reads JWT, fetches profile from API, passes to sidebar
 - `app/dashboard/page.tsx` — employee view: active event + `SafetyReportCard`
@@ -259,8 +259,9 @@ apps/server/src/routes/index.ts  ← register all routers here
 ```
 apps/web/utils/auth/server.ts
 apps/web/utils/auth/actions.ts
-apps/web/middleware.ts
-apps/web/app/login/page.tsx + actions.ts
+apps/web/utils/api.ts
+apps/web/proxy.ts
+apps/web/app/login/page.tsx + login-form.tsx
 apps/web/app/dashboard/layout.tsx
 apps/web/app/dashboard/page.tsx
 apps/web/components/safety/safety-report-card.tsx

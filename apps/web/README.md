@@ -57,8 +57,8 @@ The web app uses an httpOnly JWT cookie issued by `apps/server`'s `/api/auth/log
        │  GET /dashboard  (cookie sent automatically)
        ▼
 ┌────────────┐
-│ Next.js    │  middleware.ts checks cookie → redirects if missing
-│ web app    │  RSC calls getSession() → verifies JWT locally with jose
+│ Next.js    │  proxy.ts checks cookie → redirects if missing
+│ web app    │  RSC calls getCurrentUser() → verifies JWT locally with jose
 │            │  Server Actions call apiFetch() → forwards token as Bearer
 └────────────┘
 ```
@@ -67,26 +67,27 @@ The web app uses an httpOnly JWT cookie issued by `apps/server`'s `/api/auth/log
 
 ```
 apps/web/
-├── middleware.ts                # Gates /dashboard/* — redirects to /login if no cookie
-├── lib/
+├── proxy.ts                     # Gates /dashboard/* — redirects to /login if no cookie
+├── utils/
 │   ├── auth/
-│   │   └── session.ts           # getSession (verify JWT) + getCurrentUser (calls /api/auth/me)
+│   │   ├── server.ts            # getToken, getCurrentUser (verify JWT), requireAuth
+│   │   └── actions.ts           # login / logout (server actions)
 │   └── api.ts                   # apiFetch — server-side fetch with cookie→Bearer forwarding
 ├── app/
 │   ├── login/
 │   │   ├── page.tsx             # Email + password form
-│   │   └── actions.ts           # loginAction / logoutAction (server actions)
+│   │   └── login-form.tsx       # Client form using useActionState
 │   ├── dashboard/
-│   │   ├── layout.tsx           # Sidebar + header (loads current user)
-│   │   ├── page.tsx             # Active event + SafetyReportCard
-│   │   └── actions.ts           # submitReport server action
+│   │   ├── layout.tsx           # Sidebar + header (requireAuth, fetches profile)
+│   │   ├── page.tsx             # Active event + SafetyReportCard (Phase 4)
+│   │   └── actions.ts           # submitReport server action (Phase 4)
 │   └── error/page.tsx           # Auth error page
-└── components/dashboard/        # ActiveEventCard, SafetyReportCard
+└── components/safety/           # ActiveEventCard, SafetyReportCard (Phase 4)
 ```
 
 ### Why local JWT verification?
 
-Verifying the token in `getSession()` with `jose` (using the shared `JWT_SECRET`) avoids an HTTP round-trip to `/api/auth/me` on every Server Component render. We still call `/api/auth/me` once in `getCurrentUser()` when we need fields not in the JWT (e.g. the user's `name`).
+Verifying the token in `getCurrentUser()` with `jose` (using the shared `JWT_SECRET`) avoids an HTTP round-trip on every Server Component render. The dashboard layout still calls `/api/auth/me` once to fetch the user's `name`, which isn't part of the JWT payload.
 
 ## Routes
 
