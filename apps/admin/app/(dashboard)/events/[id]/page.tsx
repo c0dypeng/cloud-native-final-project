@@ -1,5 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Radio } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@workspace/ui/components/button";
 import { Badge } from "@workspace/ui/components/badge";
@@ -72,6 +72,14 @@ export default async function EventDetailPage({
               </p>
             )}
           </div>
+          {event.status === "active" && (
+            <Button asChild variant="default">
+              <Link href={`/events/${id}/live`}>
+                <Radio className="mr-1.5 h-4 w-4 animate-pulse [animation-duration:2s]" aria-hidden />
+                Live 指揮中心
+              </Link>
+            </Button>
+          )}
         </header>
       </div>
 

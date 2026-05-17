@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { and, desc, eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { db } from "../lib/db.js";
 import { events } from "@workspace/database";
 import { eventCreateInputSchema } from "@workspace/api-contracts";

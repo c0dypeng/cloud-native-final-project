@@ -19,6 +19,12 @@ import { z } from "zod";
 
 const okSchema = z.object({}).passthrough();
 
+const reminderResponseSchema = z.object({
+  ok: z.boolean(),
+  unreported: z.number().int().nonnegative(),
+  eventId: z.string().uuid(),
+});
+
 export const adminApi = {
   events: {
     list: () => apiFetch("/api/events", eventListResponseSchema),
@@ -30,6 +36,11 @@ export const adminApi = {
     close: (id: string) =>
       apiFetch(`/api/events/${id}/close`, eventResponseSchema, {
         method: "PATCH",
+      }),
+    /** Manually trigger the unreported-reminder flow for a single event. */
+    remind: (id: string) =>
+      apiFetch(`/api/admin/events/${id}/remind`, reminderResponseSchema, {
+        method: "POST",
       }),
   },
   reports: {

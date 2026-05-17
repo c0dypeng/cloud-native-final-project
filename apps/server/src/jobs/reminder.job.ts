@@ -143,6 +143,34 @@ async function processEvent(event: {
   );
 }
 
+/**
+ * Manually trigger the reminder flow for a single event. Used by the admin
+ * "Send reminder now" button on the live command center — does not respect
+ * the cron lock (operator override) but still applies the per-user
+ * 3-emails-per-event cap.
+ */
+export async function runReminderForEvent(event: {
+  id: string;
+  title: string;
+}): Promise<{ unreported: number; managersNotified: number }> {
+  const beforeUnreported = await db
+    .execute(sql`
+      SELECT COUNT(*)::int AS count
+      FROM users u
+      LEFT JOIN safety_reports r
+        ON r.user_id = u.id AND r.event_id = ${event.id}
+      WHERE u.is_active = true
+        AND u.role IN ('employee', 'manager')
+        AND (r.id IS NULL OR r.status = 'not_reported')
+    `)
+    .then((rows) => (rows as unknown as Array<{ count: number }>)[0]?.count ?? 0);
+
+  await processEvent(event);
+  // processEvent doesn't return counts, but the metric was updated; surface
+  // the unreported count we measured here so the admin gets a confirmation.
+  return { unreported: beforeUnreported, managersNotified: 0 };
+}
+
 export async function runReminderTick(): Promise<void> {
   // Distributed lock: only one replica runs the cron per tick.
   const gotLock = await acquireLock(CRON_LOCK_KEY, CRON_LOCK_TTL_SECONDS);

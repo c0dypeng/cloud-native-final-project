@@ -1,4 +1,11 @@
-.PHONY: help dev-docker up down logs logs-web logs-admin logs-server logs-postgres migrate seed seed-load test test-coverage k6-report k6-dashboard kind-up kind-down obs-up obs-down clean
+.PHONY: help dev-docker up down logs logs-web logs-admin logs-server logs-postgres migrate seed seed-load test test-coverage k6-report k6-dashboard kind-up kind-down obs-up obs-down demo-ready demo-status clean
+
+# Sensible defaults so a fresh checkout works without exporting env vars.
+POSTGRES_PASSWORD ?= devpassword
+DATABASE_URL ?= postgresql://safety:$(POSTGRES_PASSWORD)@localhost:5432/safetydb
+SEED_ADMIN_USERNAME ?= admin
+SEED_ADMIN_PASSWORD ?= changeme
+SEED_USER_PASSWORD ?= password123
 
 # Default target
 help:
@@ -39,6 +46,10 @@ help:
 	@echo ""
 	@echo "Cleanup:"
 	@echo "  make clean            - Remove all containers, volumes, and images"
+	@echo ""
+	@echo "Demo:"
+	@echo "  make demo-ready       - One-shot pre-flight: boot stack + migrate + seed + obs"
+	@echo "  make demo-status      - Show service health + URLs + demo credentials"
 	@echo ""
 	@echo "Local dev (no Docker): bun dev"
 	@echo "Build check:           bun lint && bun typecheck && bun run build"
@@ -126,7 +137,57 @@ logs-server:
 logs-postgres:
 	docker compose logs -f postgres
 
+# ── Demo pre-flight ───────────────────────────────────────────────────────────
+# One-shot bring-up for the 5/26 demo: data services, migrations, seed,
+# observability stack. Idempotent — safe to re-run.
+demo-ready:
+	@if [ ! -f .env ]; then \
+		echo "Creating .env from .env.example…"; \
+		cp .env.example .env; \
+		echo "WARNING: edit .env to set real values before production use."; \
+	fi
+	@echo "→ Booting Postgres + Redis + 3 app services…"
+	docker compose up -d
+	@echo "→ Bringing up observability (Prometheus + Grafana + Loki + Promtail)…"
+	docker compose --profile observability up -d
+	@echo "→ Waiting for Postgres…"
+	@for i in $$(seq 1 30); do \
+		docker compose exec -T postgres pg_isready -U safety -d safetydb >/dev/null 2>&1 && break; \
+		sleep 2; \
+	done
+	@echo "→ Applying Drizzle migrations…"
+	$(MAKE) migrate DATABASE_URL='$(DATABASE_URL)'
+	@echo "→ Seeding demo data (100 users, 5 depts × 4-level hierarchy)…"
+	$(MAKE) seed DATABASE_URL='$(DATABASE_URL)' \
+		SEED_ADMIN_USERNAME='$(SEED_ADMIN_USERNAME)' \
+		SEED_ADMIN_PASSWORD='$(SEED_ADMIN_PASSWORD)'
+	@$(MAKE) demo-status
+
+demo-status:
+	@echo ""
+	@echo "════════════════════════════════════════════════════════════"
+	@echo " 護你安 HuYouAn — demo stack status"
+	@echo "════════════════════════════════════════════════════════════"
+	@echo ""
+	@curl -sf http://localhost:4000/api/health 2>/dev/null \
+		| sed 's/^/  API:    /' || echo "  API:    NOT REACHABLE (docker compose up?)"
+	@echo "  Web:    http://localhost:3000  (employees + managers)"
+	@echo "  Admin:  http://localhost:3001  (admin console)"
+	@echo "  Grafana http://localhost:3030  (admin/admin)"
+	@echo "  Prom:   http://localhost:9090"
+	@echo ""
+	@echo "  Demo credentials (password: $(SEED_USER_PASSWORD) unless noted):"
+	@echo "    Admin:    $(SEED_ADMIN_USERNAME) / $(SEED_ADMIN_PASSWORD)   → http://localhost:3001/login"
+	@echo "    Employee: employee@huyouan.local"
+	@echo "    Manager:  manager@huyouan.local"
+	@echo "    CEO:      ceo@huyouan.local"
+	@echo ""
+	@echo "  Demo script:  docs/DEMO.md"
+	@echo "  Load test:    make seed-load && make k6-report EVENT_ID=<uuid>"
+	@echo "════════════════════════════════════════════════════════════"
+
 # Cleanup
 clean:
 	docker compose down -v
+	docker compose --profile observability down -v
 	docker system prune -af --volumes

@@ -2,6 +2,7 @@ import { Router, type Router as ExpressRouter } from "express";
 import { healthCheck } from "../controllers/health.controller.js";
 import { authRouter } from "./auth.routes.js";
 import { adminAuthRouter } from "./admin-auth.routes.js";
+import { adminActionsRouter } from "./admin-actions.routes.js";
 import { eventsRouter } from "./events.routes.js";
 import { managerRouter } from "./manager.routes.js";
 import { usersRouter } from "./users.routes.js";
@@ -14,6 +15,7 @@ router.get("/health", healthCheck);
 
 router.use("/auth", authRouter);
 router.use("/admin/auth", adminAuthRouter);
+router.use("/admin", adminActionsRouter);
 router.use("/events", eventsRouter);
 router.use("/manager", managerRouter);
 router.use("/users", usersRouter);
