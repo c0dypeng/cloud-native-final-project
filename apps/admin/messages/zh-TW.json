@@ -1,0 +1,28 @@
+{
+  "app": {
+    "name": "護你安",
+    "subtitle": "管理後台"
+  },
+  "nav": {
+    "overview": "概覽",
+    "events": "事件管理",
+    "users": "使用者",
+    "departments": "組織架構",
+    "reports": "統計報表",
+    "logout": "登出"
+  },
+  "login": {
+    "title": "管理員登入",
+    "description": "請使用管理員帳號登入",
+    "username": "帳號",
+    "password": "密碼",
+    "submit": "登入",
+    "submitting": "登入中…",
+    "missing": "請輸入帳號與密碼",
+    "invalid": "帳號或密碼錯誤",
+    "serverUnavailable": "無法連線到伺服器，請稍後再試"
+  },
+  "common": {
+    "language": "語言"
+  }
+}

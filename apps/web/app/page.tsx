@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
+import { getToken } from "@/utils/auth/server";
 
-// TODO (Person 2): replace with JWT cookie auth check
-export default function RootPage() {
-  redirect("/login");
+export default async function RootPage() {
+  const token = await getToken();
+  redirect(token ? "/dashboard" : "/login");
 }

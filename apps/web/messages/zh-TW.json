@@ -1,0 +1,130 @@
+{
+  "app": {
+    "name": "護你安",
+    "tagline": "員工安全回報系統"
+  },
+  "nav": {
+    "dashboard": "儀表板",
+    "team": "主管關懷",
+    "settings": "個人設定",
+    "logout": "登出"
+  },
+  "roles": {
+    "employee": "員工",
+    "manager": "主管"
+  },
+  "login": {
+    "title": "登入",
+    "description": "請輸入您的公司電子郵件與密碼。帳戶由管理員建立。",
+    "email": "電子郵件",
+    "password": "密碼",
+    "submit": "登入",
+    "submitting": "登入中…",
+    "missingCredentials": "請輸入電子郵件與密碼",
+    "invalidCredentials": "帳號或密碼錯誤",
+    "serverUnavailable": "無法連線到伺服器，請稍後再試"
+  },
+  "dashboard": {
+    "greeting": "您好，{name}",
+    "employeeSubtitle": "請於發生緊急事件時，立即回報您的安全狀態。",
+    "managerSubtitle": "查看您的安全狀態並關懷部屬。",
+    "teamStatusFor": "部屬狀態 · {event}",
+    "noActiveEvent": {
+      "title": "目前沒有進行中的事件",
+      "description": "當公司啟動緊急應變事件時，您會在此看到回報按鈕，並收到即時通知。",
+      "footer": "連線正常，系統將自動推送新事件。"
+    }
+  },
+  "report": {
+    "title": "{title}",
+    "drillBadge": "演習",
+    "createdAt": "建立於 {date}",
+    "type": "類型：{type}",
+    "iAmSafe": "我安全",
+    "iNeedHelp": "需要協助",
+    "messagePlaceholder": "附上訊息給主管（例如：我在 B 棟三樓需要協助）",
+    "attachMessage": "附上訊息（選填）",
+    "lastReported": "最後回報於 {date}",
+    "submittedSafe": "已回報「我安全」",
+    "submittedNeedHelp": "已回報「需要協助」，主管已收到通知",
+    "submitFailed": "回報失敗",
+    "retryHint": "請稍後再試",
+    "statusReportedSafe": "已回報 · 安全",
+    "statusReportedNeedHelp": "已回報 · 需要協助",
+    "statusNotReported": "尚未回報"
+  },
+  "team": {
+    "header": "主管關懷",
+    "eventLabel": "事件：{event}",
+    "noEventLabel": "目前沒有進行中的事件，您可以瀏覽團隊聯絡資訊。",
+    "memberCount": "我的部屬 ({count} 位)",
+    "searchPlaceholder": "搜尋姓名、信箱、部門…",
+    "filterAll": "全部",
+    "filterNotReported": "未回報",
+    "filterSafe": "安全",
+    "filterNeedHelp": "需要協助",
+    "emptyAll": "尚無部屬",
+    "emptyFiltered": "沒有符合的部屬",
+    "deptLevel": "{dept} · 第 {depth} 階",
+    "managerBadge": "主管",
+    "callButton": "撥電話",
+    "emailButton": "寄信"
+  },
+  "summary": {
+    "title": "團隊回報概況",
+    "safe": "已安全",
+    "needHelp": "需協助",
+    "notReported": "未回報",
+    "totalLabel": "共 {total} 位部屬 · 已回報率 {rate}"
+  },
+  "unreported": {
+    "title": "未回報部屬",
+    "allReported": "所有部屬皆已回報，狀況良好。",
+    "needsReminder": "共 {count} 位需要提醒",
+    "fullCare": "完整關懷",
+    "more": "另有 {count} 位"
+  },
+  "needHelp": {
+    "alertTitle": "🚨 {name} 需要協助",
+    "willHandle": "我會處理",
+    "close": "關閉"
+  },
+  "reminderToast": {
+    "self": "【提醒】請回報您的安全狀況",
+    "manager": "【提醒】您有 {count} 位部屬尚未回報",
+    "newEvent": "新緊急事件：{title}",
+    "newEventDescription": "請立即回報您的安全狀況。",
+    "eventClosed": "事件已結束"
+  },
+  "settings": {
+    "title": "個人設定",
+    "subtitle": "檢視您的帳戶資訊與偏好設定。",
+    "accountInfo": "帳戶資訊",
+    "accountInfoNote": "由管理員建立，如需修改請聯絡管理員。",
+    "name": "姓名",
+    "email": "信箱",
+    "role": "角色",
+    "language": "語言偏好",
+    "languageDescription": "切換介面語言（僅影響您自己的瀏覽器）。",
+    "languageZh": "繁體中文",
+    "languageEn": "English"
+  },
+  "connection": {
+    "live": "即時連線中",
+    "reconnecting": "重新連線中",
+    "liveTitle": "已連線即時更新",
+    "reconnectingTitle": "未連線即時更新"
+  },
+  "offline": {
+    "title": "目前無法連線",
+    "description": "護你安需要網路連線才能即時回報。請檢查您的網路狀態後重試。"
+  },
+  "eventType": {
+    "earthquake": "地震",
+    "fire": "火災",
+    "security": "資安",
+    "accident": "意外",
+    "drill": "演習",
+    "other": "其他"
+  }
+}

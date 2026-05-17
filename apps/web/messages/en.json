@@ -1,0 +1,130 @@
+{
+  "app": {
+    "name": "HuYouAn",
+    "tagline": "Employee Safety & Response System"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "team": "Team Care",
+    "settings": "Settings",
+    "logout": "Sign out"
+  },
+  "roles": {
+    "employee": "Employee",
+    "manager": "Manager"
+  },
+  "login": {
+    "title": "Sign in",
+    "description": "Enter your work email and password. Accounts are provisioned by an administrator.",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Sign in",
+    "submitting": "Signing in…",
+    "missingCredentials": "Email and password are required",
+    "invalidCredentials": "Invalid email or password",
+    "serverUnavailable": "Cannot reach the server. Please try again."
+  },
+  "dashboard": {
+    "greeting": "Hi, {name}",
+    "employeeSubtitle": "Report your safety status immediately when a disaster strikes.",
+    "managerSubtitle": "Check your own status and watch over your team.",
+    "teamStatusFor": "Team status · {event}",
+    "noActiveEvent": {
+      "title": "No active events",
+      "description": "When your company declares an emergency, you'll see the report button here and get a real-time notification.",
+      "footer": "Connected — new events will arrive automatically."
+    }
+  },
+  "report": {
+    "title": "{title}",
+    "drillBadge": "Drill",
+    "createdAt": "Created {date}",
+    "type": "Type: {type}",
+    "iAmSafe": "I'm safe",
+    "iNeedHelp": "I need help",
+    "messagePlaceholder": "Add a message to your manager (e.g. 'I'm trapped on floor 3 in building B')",
+    "attachMessage": "Add a message (optional)",
+    "lastReported": "Last reported at {date}",
+    "submittedSafe": "Reported as safe",
+    "submittedNeedHelp": "Reported as need-help — your manager has been notified",
+    "submitFailed": "Report failed",
+    "retryHint": "Please try again",
+    "statusReportedSafe": "Reported · Safe",
+    "statusReportedNeedHelp": "Reported · Need help",
+    "statusNotReported": "Not yet reported"
+  },
+  "team": {
+    "header": "Team Care",
+    "eventLabel": "Event: {event}",
+    "noEventLabel": "No active event. You can still browse your team's contact info.",
+    "memberCount": "My team ({count})",
+    "searchPlaceholder": "Search name, email, department…",
+    "filterAll": "All",
+    "filterNotReported": "Not reported",
+    "filterSafe": "Safe",
+    "filterNeedHelp": "Need help",
+    "emptyAll": "No team members",
+    "emptyFiltered": "No matching team members",
+    "deptLevel": "{dept} · level {depth}",
+    "managerBadge": "Manager",
+    "callButton": "Call",
+    "emailButton": "Email"
+  },
+  "summary": {
+    "title": "Team report summary",
+    "safe": "Safe",
+    "needHelp": "Need help",
+    "notReported": "Unreported",
+    "totalLabel": "{total} reports · {rate} responded"
+  },
+  "unreported": {
+    "title": "Unreported team members",
+    "allReported": "All team members have reported. All good.",
+    "needsReminder": "{count} need a nudge",
+    "fullCare": "Full list",
+    "more": "+{count} more"
+  },
+  "needHelp": {
+    "alertTitle": "🚨 {name} needs help",
+    "willHandle": "I'll handle it",
+    "close": "Dismiss"
+  },
+  "reminderToast": {
+    "self": "Reminder: please report your safety status",
+    "manager": "Reminder: {count} of your reports haven't checked in",
+    "newEvent": "New emergency: {title}",
+    "newEventDescription": "Please report your safety status now.",
+    "eventClosed": "Event closed"
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "View your account information and preferences.",
+    "accountInfo": "Account information",
+    "accountInfoNote": "Created by an administrator. Contact admin to update.",
+    "name": "Name",
+    "email": "Email",
+    "role": "Role",
+    "language": "Language",
+    "languageDescription": "Switch the interface language (only affects your browser).",
+    "languageZh": "繁體中文",
+    "languageEn": "English"
+  },
+  "connection": {
+    "live": "Live",
+    "reconnecting": "Reconnecting…",
+    "liveTitle": "Connected to live updates",
+    "reconnectingTitle": "Reconnecting to live updates"
+  },
+  "offline": {
+    "title": "You're offline",
+    "description": "HuYouAn needs an internet connection to report in real time. Check your network and try again."
+  },
+  "eventType": {
+    "earthquake": "Earthquake",
+    "fire": "Fire",
+    "security": "Security",
+    "accident": "Accident",
+    "drill": "Drill",
+    "other": "Other"
+  }
+}

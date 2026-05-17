@@ -1,24 +1,27 @@
 import type { NextConfig } from "next";
+import createNextIntlPlugin from "next-intl/plugin";
+
+const API_URL = process.env.API_URL ?? "http://localhost:4000";
+
+const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 
 const nextConfig: NextConfig = {
-  transpilePackages: ["@workspace/ui"],
+  transpilePackages: ["@workspace/ui", "@workspace/api-contracts"],
   reactCompiler: true,
   output: "standalone",
+  async rewrites() {
+    return [
+      // Proxy /api/* to the API server so the browser cookie (set on web's
+      // origin) is forwarded same-origin.
+      { source: "/api/:path*", destination: `${API_URL}/api/:path*` },
+    ];
+  },
   experimental: {
     turbopackFileSystemCacheForDev: true,
     serverActions: {
       bodySizeLimit: "10mb",
     },
-    // NOTE: cacheComponents is disabled due to compatibility issues with cookie-based auth
-    // The feature is still experimental in Next.js 16 and causes build errors when accessing cookies()
-    // We still get major performance benefits from:
-    // 1. Dynamic imports (50-100KB bundle reduction)
-    // 2. Suspense boundaries (streaming SSR)
-    // 3. React Compiler (automatic optimizations)
-    // 4. Turbopack (faster builds)
-    // 5. updateTag for cache invalidation
-    // cacheComponents: true,
   },
 };
 
-export default nextConfig;
+export default withNextIntl(nextConfig);

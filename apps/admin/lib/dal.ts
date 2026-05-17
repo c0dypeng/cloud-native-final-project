@@ -1,61 +1,35 @@
 import "server-only";
 import { cookies } from "next/headers";
-import bcrypt from "bcryptjs";
+import { cache } from "react";
 import { env } from "./env";
 
-// In-memory session store (use Redis in production for multi-instance)
-// Sessions expire after 24 hours
-const sessions = new Map<string, { createdAt: number }>();
-const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+export const ADMIN_COOKIE = "admin-session";
 
-export async function verifySession() {
+export interface AdminSession {
+  adminId: string;
+  username: string;
+}
+
+/**
+ * Validate the admin-session cookie against the API server.
+ * Cached per-request via React.cache() so multiple components can
+ * call this without extra round-trips.
+ */
+export const verifySession = cache(async (): Promise<AdminSession | null> => {
   const cookieStore = await cookies();
-  const sessionId = cookieStore.get("admin-session")?.value;
+  const sessionId = cookieStore.get(ADMIN_COOKIE)?.value;
+  if (!sessionId) return null;
 
-  if (!sessionId) {
-    return null;
-  }
-
-  const session = sessions.get(sessionId);
-
-  if (!session) {
-    return null;
-  }
-
-  // Check if session has expired
-  if (Date.now() - session.createdAt > SESSION_DURATION) {
-    sessions.delete(sessionId);
-    return null;
-  }
-
-  return { isAuthenticated: true };
-}
-
-export async function verifyPassword(password: string): Promise<boolean> {
   try {
-    return await bcrypt.compare(password, env.adminPasswordHash);
+    const res = await fetch(`${env.apiUrl}/api/admin/auth/me`, {
+      method: "GET",
+      headers: { "x-admin-session": sessionId },
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { admin: AdminSession };
+    return data.admin;
   } catch {
-    return false;
+    return null;
   }
-}
-
-export function createSession(sessionId: string) {
-  sessions.set(sessionId, { createdAt: Date.now() });
-
-  // Cleanup expired sessions periodically
-  cleanupExpiredSessions();
-}
-
-export function deleteSession(sessionId: string) {
-  sessions.delete(sessionId);
-}
-
-// Cleanup expired sessions to prevent memory leaks
-function cleanupExpiredSessions() {
-  const now = Date.now();
-  for (const [sessionId, session] of sessions.entries()) {
-    if (now - session.createdAt > SESSION_DURATION) {
-      sessions.delete(sessionId);
-    }
-  }
-}
+});

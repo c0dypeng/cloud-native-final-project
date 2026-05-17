@@ -1,0 +1,28 @@
+{
+  "app": {
+    "name": "HuYouAn",
+    "subtitle": "Admin"
+  },
+  "nav": {
+    "overview": "Overview",
+    "events": "Events",
+    "users": "Users",
+    "departments": "Departments",
+    "reports": "Reports",
+    "logout": "Sign out"
+  },
+  "login": {
+    "title": "Administrator sign in",
+    "description": "Use your administrator account to sign in",
+    "username": "Username",
+    "password": "Password",
+    "submit": "Sign in",
+    "submitting": "Signing in…",
+    "missing": "Username and password are required",
+    "invalid": "Invalid username or password",
+    "serverUnavailable": "Cannot reach the server. Please try again."
+  },
+  "common": {
+    "language": "Language"
+  }
+}

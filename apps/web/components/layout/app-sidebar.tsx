@@ -1,11 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import {
-  Settings,
-  Squircle,
-  Home,
-} from "lucide-react";
+import { Home, Settings, ShieldCheck, Users } from "lucide-react";
+import { useTranslations } from "next-intl";
+import type { UserPublic } from "@workspace/api-contracts";
 import { NavMain } from "@/components/layout/nav-main";
 import { NavSecondary } from "@/components/layout/nav-secondary";
 import { NavUser } from "@/components/layout/nav-user";
@@ -19,45 +17,42 @@ import {
   SidebarMenuItem,
 } from "@workspace/ui/components/sidebar";
 
-const NAV_ITEMS = [
-  {
-    title: "Dashboard",
-    url: "/dashboard",
-    icon: Home,
-  },
-] as const;
+interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
+  user: UserPublic;
+}
 
-const SECONDARY_NAV_ITEMS = [
-  {
-    title: "Settings",
-    url: "/dashboard/settings",
-    icon: Settings,
-  },
-] as const;
-
-interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {}
-
-export function AppSidebar({ ...props }: AppSidebarProps) {
+export function AppSidebar({ user, ...props }: AppSidebarProps) {
+  const tNav = useTranslations("nav");
+  const tApp = useTranslations("app");
+  const navItems = [
+    { title: tNav("dashboard"), url: "/dashboard", icon: Home },
+    ...(user.role === "manager"
+      ? ([{ title: tNav("team"), url: "/dashboard/team", icon: Users }] as const)
+      : []),
+  ];
+  const secondaryItems = [
+    { title: tNav("settings"), url: "/dashboard/settings", icon: Settings },
+  ];
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
-              <Link href="/">
-                <Squircle className="size-5" />
-                <span className="text-base font-semibold">App</span>
+              <Link href="/dashboard">
+                <ShieldCheck className="size-5" />
+                <span className="text-base font-semibold">{tApp("name")}</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={NAV_ITEMS} />
-        <NavSecondary items={SECONDARY_NAV_ITEMS} className="mt-auto" />
+        <NavMain items={navItems} />
+        <NavSecondary items={secondaryItems} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser />
+        <NavUser user={user} />
       </SidebarFooter>
     </Sidebar>
   );

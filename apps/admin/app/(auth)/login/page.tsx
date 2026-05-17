@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { useTranslations } from "next-intl";
 import { login } from "@/lib/actions";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
@@ -14,12 +15,17 @@ import {
 } from "@workspace/ui/components/card";
 import { Alert, AlertDescription } from "@workspace/ui/components/alert";
 import { Lock } from "lucide-react";
+import { LanguageSwitcher } from "@/components/nav/language-switcher";
 
 export default function LoginPage() {
+  const t = useTranslations("login");
   const [state, formAction, pending] = useActionState(login, undefined);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted">
+    <div className="flex min-h-screen items-center justify-center bg-muted relative">
+      <div className="absolute top-4 right-4">
+        <LanguageSwitcher />
+      </div>
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <div className="flex items-center justify-center mb-4">
@@ -27,20 +33,33 @@ export default function LoginPage() {
               <Lock className="h-6 w-6 text-primary-foreground" />
             </div>
           </div>
-          <CardTitle className="text-2xl text-center">管理員登入</CardTitle>
+          <CardTitle className="text-2xl text-center">{t("title")}</CardTitle>
           <CardDescription className="text-center">
-            輸入密碼以進入管理後台
+            {t("description")}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form action={formAction} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="password">密碼</Label>
+              <Label htmlFor="username">{t("username")}</Label>
+              <Input
+                id="username"
+                name="username"
+                type="text"
+                autoComplete="username"
+                placeholder={t("username")}
+                required
+                disabled={pending}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">{t("password")}</Label>
               <Input
                 id="password"
                 name="password"
                 type="password"
-                placeholder="請輸入管理員密碼"
+                autoComplete="current-password"
+                placeholder={t("password")}
                 required
                 disabled={pending}
               />
@@ -56,9 +75,9 @@ export default function LoginPage() {
               type="submit"
               className="w-full"
               loading={pending}
-              loadingText="登入中..."
+              loadingText={t("submitting")}
             >
-              登入
+              {t("submit")}
             </Button>
           </form>
         </CardContent>
