@@ -2,10 +2,17 @@
   "extends": "@workspace/typescript-config/base.json",
   "compilerOptions": {
     "baseUrl": ".",
+    "outDir": "dist",
+    "rootDir": "src",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "composite": false,
+    "noEmit": false,
     "paths": {
       "@workspace/database/*": ["./src/*"]
     }
   },
-  "include": ["src"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "src/seed.ts"]
 }

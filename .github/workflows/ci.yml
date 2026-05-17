@@ -64,6 +64,9 @@ jobs:
           path: ~/.bun/install/cache
           key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
       - run: bun install --frozen-lockfile
+      # Build the shared packages so the server can import compiled JS/types.
+      - run: bun run --filter @workspace/api-contracts build
+      - run: bun run --filter @workspace/database build
       - name: apply drizzle migrations
         working-directory: packages/database
         run: bun run db:push --force
