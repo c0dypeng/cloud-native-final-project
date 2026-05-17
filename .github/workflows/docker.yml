@@ -4,6 +4,11 @@ on:
     branches: [main]
     tags: ["v*"]
   workflow_dispatch:
+    inputs:
+      public_api_url:
+        description: "NEXT_PUBLIC_API_URL baked into web/admin images"
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -12,6 +17,10 @@ permissions:
 env:
   REGISTRY: ghcr.io
   IMAGE_PREFIX: ${{ github.repository_owner }}/huyouan
+  # The browser-facing API URL is baked into the Next.js bundle at build
+  # time. Default to a same-origin empty string so the image works behind any
+  # ingress hostname; override per-deploy via workflow_dispatch.
+  PUBLIC_API_URL: ${{ github.event.inputs.public_api_url || '' }}
 
 jobs:
   build:
@@ -49,4 +58,4 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.app }}
           cache-to: type=gha,mode=max,scope=${{ matrix.app }}
           build-args: |
-            NEXT_PUBLIC_API_URL=http://huyouan.local
+            NEXT_PUBLIC_API_URL=${{ env.PUBLIC_API_URL }}
