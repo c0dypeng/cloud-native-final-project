@@ -1,26 +1,39 @@
-# Employee Safety & Response System
+# 護你安 HuYouAn · Employee Safety & Response System
 
-A cloud-native emergency safety reporting system built with Next.js, Express, PostgreSQL, and Kubernetes.
+[![ci](https://github.com/c0dypeng/cloud-native-final-project/actions/workflows/ci.yml/badge.svg)](https://github.com/c0dypeng/cloud-native-final-project/actions)
 
-When emergencies happen (earthquakes, fires, etc.), admins create events and employees report their safety status. Managers monitor their team in real time.
+> 災害發生時，員工一鍵回報「我安全」或「需要協助」，主管即時掌握全員狀態。
+> 雲原生應用程式開發 114-2 期末專案 · Group 3 · Mentor: Jeffery (TSMC)
+
+Cloud-native employee safety reporting system: Next.js 16 PWA · Express 4
+API · PostgreSQL 17 + Drizzle ORM · Redis cache · SSE real-time push ·
+Kubernetes deployment with HPA + zero-downtime rollouts + Prometheus +
+Grafana + Loki + Alertmanager.
 
 ## Project Structure
 
 ```
 ├── apps/
-│   ├── web/               # Employee & manager frontend (Next.js, port 3000)
-│   ├── admin/             # Admin dashboard (Next.js, port 3001)
-│   └── server/            # REST API (Express, port 4000)
+│   ├── web/               # Employees + managers (Next.js PWA, port 3000)
+│   ├── admin/             # Admin console (Next.js, port 3001)
+│   └── server/            # REST API + SSE + reminder cron (Express, :4000)
 ├── packages/
-│   ├── database/          # Drizzle ORM schema, migrations, seed
-│   ├── ui/                # Shared shadcn/ui components
-│   ├── eslint-config/
-│   └── typescript-config/
-├── k8s/                   # Kubernetes manifests
-├── docker-compose.yml     # Production Docker setup
-├── docker-compose.dev.yml # Development Docker setup (hot-reload)
-├── plan.md                # Full project plan and team split
-└── Makefile               # Convenience commands
+│   ├── api-contracts/     # Shared Zod schemas (request/response/SSE)
+│   ├── database/          # Drizzle ORM schema + migrations + faker seed
+│   ├── ui/                # shadcn (Base UI) component library
+│   └── {eslint,typescript}-config/
+├── k8s/
+│   ├── base/              # Deployment, Service, Ingress, HPA, StatefulSet, PDB
+│   ├── observability/     # kube-prometheus-stack values + alert rules
+│   └── kind/              # Local Kubernetes (kind) bootstrap script
+├── observability/         # Local Prometheus / Grafana / Loki / Promtail
+├── tests/load/            # k6 load test scripts
+├── docs/                  # Architecture, sequences, ER, ADRs (Mermaid)
+├── .github/workflows/     # CI (lint+typecheck+test+build), Docker, e2e
+├── docker-compose.yml     # All services (incl. observability profile)
+├── docker-compose.dev.yml # Hot-reload dev compose
+├── plan.md                # Original HW2 architecture plan
+└── Makefile               # Convenience commands (see `make help`)
 ```
 
 ## Prerequisites
@@ -101,13 +114,23 @@ Creates all tables. Only needed once per environment (or after `make clean`).
 make migrate DATABASE_URL=postgresql://safety:devpassword@localhost:5432/safetydb
 ```
 
-### 5. Seed the initial admin account (one-time)
+### 5. Seed demo data (one-time)
 
 ```bash
 make seed DATABASE_URL=postgresql://safety:devpassword@localhost:5432/safetydb
 ```
 
-Default credentials: `admin` / `changeme` (change via `SEED_ADMIN_USERNAME` / `SEED_ADMIN_PASSWORD` in `.env`).
+This creates:
+
+- **Admin account:** `admin` / `changeme` (via `SEED_ADMIN_USERNAME` / `SEED_ADMIN_PASSWORD`).
+- **5 departments × 4-level hierarchy × ~100 users** (faker-generated, deterministic).
+- **Demo logins** (password `password123` for all):
+  - `employee@huyouan.local` — 員工視角
+  - `manager@huyouan.local` — 主管視角，has the demo employee as a subordinate
+  - `ceo@huyouan.local` — 高階主管，sees the full recursive subordinate tree
+
+For load testing run `make seed-load` instead — same hierarchy with 10k users
+and predictable emails `empNNNNN@huyouan.local`.
 
 ### 6. Start the apps
 
@@ -188,12 +211,83 @@ Make sure your `.env` at the root has all required values (see `.env.example`).
 
 ---
 
+## Tests
+
+```bash
+# Spin up Postgres + Redis (re-uses the dev compose stack)
+make dev-docker  # in another terminal, leave running
+
+# Backend integration suite (Vitest + Supertest against real Postgres + Redis)
+make test
+make test-coverage   # writes apps/server/coverage/
+
+# Load tests (requires an active event and seed:load data)
+make seed-load DATABASE_URL=...
+make k6-report EVENT_ID=<uuid>
+make k6-dashboard EVENT_ID=<uuid>
+```
+
+The SLO encoded in `tests/load/report-surge.js`:
+1k concurrent VUs, p95 ≤ 500ms, error rate ≤ 0.5%.
+
+## Kubernetes (local kind cluster)
+
+```bash
+# One-command setup: kind cluster + nginx-ingress + kube-prometheus-stack + apps
+make kind-up
+
+# Add to /etc/hosts:
+#   127.0.0.1   huyouan.local admin.huyouan.local
+# Open:
+#   http://huyouan.local           (employee + manager)
+#   http://admin.huyouan.local     (admin console)
+
+# Grafana
+kubectl -n observability port-forward svc/prom-grafana 3030:80
+#   http://localhost:3030 (admin/admin)
+
+make kind-down                     # tear it all down
+```
+
+Manifests cover: Deployment + Service + Ingress + HPA (2→10 server pods) +
+PodDisruptionBudget + Postgres StatefulSet + PgBouncer + Redis + DB migration
+Job. Strategy: RollingUpdate with `maxUnavailable: 0`, `maxSurge: 1`.
+
+## Observability
+
+Local (docker-compose):
+
+```bash
+make obs-up
+# Prometheus  http://localhost:9090
+# Grafana     http://localhost:3030  (admin/admin) — 3 dashboards pre-loaded
+# Loki        http://localhost:3100
+```
+
+Cluster: included in `make kind-up`. Three Grafana dashboards under
+`observability/grafana/dashboards/`: **API Overview**, **Safety SLO**,
+**Backing Services**. Three alert rules: `HighErrorRate`, `HighP95Latency`,
+`PodCrashLooping`.
+
+## Architecture docs
+
+Diagrams live in [`docs/`](./docs):
+- [Architecture overview](./docs/architecture.md) (high-level Mermaid)
+- [Entity-relationship](./docs/er.md)
+- Sequences: [safety-report](./docs/sequences/safety-report.md),
+  [need-help](./docs/sequences/need-help.md),
+  [reminder-cron](./docs/sequences/reminder-cron.md),
+  [auth-flow](./docs/sequences/auth-flow.md)
+- ADRs: [SSE](./docs/decisions/001-sse-over-websocket.md),
+  [Supabase→Drizzle](./docs/decisions/002-supabase-to-drizzle.md),
+  [Monolith](./docs/decisions/003-monolith-not-microservices.md)
+
 ## Code Quality
 
 Run these before every commit:
 
 ```bash
-bun lint && bun typecheck && bun run build
+bun lint && bun run typecheck && bun run build
 ```
 
 ---
@@ -250,19 +344,24 @@ Auth middleware is already set up — use `requireAuth`, `requireRole`, or `requ
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Frontend | Next.js 16 (App Router), React 19, TypeScript |
-| UI | shadcn/ui, Tailwind CSS v4 |
-| API | Express 4, TypeScript |
-| Database | PostgreSQL 17, Drizzle ORM |
-| Connection pooling | PgBouncer |
-| Auth | Custom JWT (`jsonwebtoken` + `bcryptjs`) |
-| Logging | pino (structured JSON) |
-| Metrics | prom-client (Prometheus) |
-| Monorepo | Turborepo + Bun workspaces |
-| Containers | Docker + Docker Compose |
-| Orchestration | Kubernetes (manifests in `k8s/`) |
+| Layer                | Technology                                                |
+|----------------------|-----------------------------------------------------------|
+| Frontend             | Next.js 16 (App Router) · React 19 · React Compiler · PWA |
+| UI                   | shadcn/ui (Base UI variant) · Tailwind CSS v4 · OKLCH     |
+| Real-time            | Server-Sent Events (Express → `EventSource`)              |
+| API                  | Express 4 · TypeScript · Zod (`@workspace/api-contracts`) |
+| Database             | PostgreSQL 17 · Drizzle ORM · recursive CTEs              |
+| Connection pool      | PgBouncer (transaction pooling)                           |
+| Cache                | Redis 7 (3s TTL stats cache + reminder counters)          |
+| Auth                 | Custom JWT cookie (users) + in-memory session (admin)     |
+| Notifications        | Resend (email) + SSE (in-app)                             |
+| Logging              | pino (structured JSON) → Loki via Promtail                |
+| Metrics              | prom-client → Prometheus → Grafana + Alertmanager        |
+| Tests                | Vitest + Supertest (integration) · k6 (load)              |
+| Monorepo             | Turborepo + Bun workspaces                                |
+| Containers           | Docker + Docker Compose                                   |
+| Orchestration        | Kubernetes (kind locally; manifests in `k8s/`)            |
+| CI/CD                | GitHub Actions → GHCR (multi-image)                       |
 
 ---
 

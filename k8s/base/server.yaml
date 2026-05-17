@@ -1,0 +1,102 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: server
+  namespace: huyouan
+  labels: { app: server }
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels: { app: server }
+  template:
+    metadata:
+      labels: { app: server }
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "4000"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: server
+          image: ghcr.io/c0dypeng/huyouan-server:latest
+          imagePullPolicy: IfNotPresent
+          ports: [{ containerPort: 4000, name: http }]
+          envFrom:
+            - configMapRef: { name: huyouan-config }
+          env:
+            - name: DATABASE_URL
+              valueFrom: { secretKeyRef: { name: huyouan-secrets, key: DATABASE_URL } }
+            - name: REDIS_URL
+              value: redis://redis:6379
+            - name: JWT_SECRET
+              valueFrom: { secretKeyRef: { name: huyouan-secrets, key: JWT_SECRET } }
+            - name: RESEND_API_KEY
+              valueFrom: { secretKeyRef: { name: huyouan-secrets, key: RESEND_API_KEY, optional: true } }
+          readinessProbe:
+            httpGet: { path: /api/health, port: http }
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet: { path: /api/health, port: http }
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            failureThreshold: 4
+          startupProbe:
+            httpGet: { path: /api/health, port: http }
+            failureThreshold: 30
+            periodSeconds: 2
+          resources:
+            requests: { cpu: 200m, memory: 256Mi }
+            limits: { cpu: 1, memory: 512Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: server
+  namespace: huyouan
+  labels: { app: server }
+spec:
+  selector: { app: server }
+  ports:
+    - name: http
+      port: 4000
+      targetPort: http
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: server
+  namespace: huyouan
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: server
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 60
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: server
+  namespace: huyouan
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels: { app: server }

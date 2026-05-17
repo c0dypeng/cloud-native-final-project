@@ -1,0 +1,34 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-migrate
+  namespace: huyouan
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: migrate
+          image: ghcr.io/c0dypeng/huyouan-server:latest
+          imagePullPolicy: IfNotPresent
+          command: ["node"]
+          args:
+            - "-e"
+            - |
+              import('postgres').then(async ({default: postgres}) => {
+                const fs = await import('fs');
+                const path = await import('path');
+                const sql = postgres(process.env.DATABASE_URL);
+                const dir = '/migrations';
+                const files = fs.readdirSync(dir).filter(f => f.endsWith('.sql')).sort();
+                for (const f of files) {
+                  const stmts = fs.readFileSync(path.join(dir, f), 'utf8').split('--> statement-breakpoint');
+                  for (const s of stmts) { const t = s.trim(); if (t) await sql.unsafe(t); }
+                  console.log('applied', f);
+                }
+                await sql.end();
+              });
+          env:
+            - name: DATABASE_URL
+              valueFrom: { secretKeyRef: { name: huyouan-secrets, key: DATABASE_URL } }

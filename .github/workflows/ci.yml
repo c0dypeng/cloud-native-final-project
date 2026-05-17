@@ -1,0 +1,78 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: lint + typecheck + build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with: { bun-version: 1.3.9 }
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            **/.next/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
+          restore-keys: ${{ runner.os }}-bun-
+      - run: bun install --frozen-lockfile
+      - run: bun lint
+      - run: bun run typecheck
+      - run: bun run build
+
+  test:
+    name: server integration tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: safetydb_test
+          POSTGRES_USER: safety
+          POSTGRES_PASSWORD: safety
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U safety -d safetydb_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 5s --health-retries 5
+    env:
+      DATABASE_URL: postgresql://safety:safety@localhost:5432/safetydb_test
+      REDIS_URL: redis://localhost:6379
+      JWT_SECRET: ci-test-secret-with-enough-length-for-jwt-padding-padding
+      JWT_EXPIRES_IN: 1h
+      NODE_ENV: test
+      REMINDER_JOB_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with: { bun-version: 1.3.9 }
+      - uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
+      - run: bun install --frozen-lockfile
+      - name: apply drizzle migrations
+        working-directory: packages/database
+        run: bun run db:push --force
+      - name: run vitest
+        working-directory: apps/server
+        run: bun run test:coverage
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: server-coverage
+          path: apps/server/coverage
+          if-no-files-found: ignore

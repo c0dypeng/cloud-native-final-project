@@ -1,0 +1,56 @@
+prometheus:
+  prometheusSpec:
+    podMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorSelectorNilUsesHelmValues: false
+    additionalScrapeConfigs:
+      - job_name: huyouan-server
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces: { names: [huyouan] }
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            action: keep
+            regex: server
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_port]
+            action: replace
+            target_label: __address__
+            regex: (.+)
+            replacement: $1
+        metrics_path: /metrics
+grafana:
+  defaultDashboardsTimezone: Asia/Taipei
+  dashboardsConfigMaps:
+    - configMapName: huyouan-grafana-dashboards
+      fileName: api-overview.json
+alertmanager:
+  config:
+    receivers:
+      - name: default
+      - name: huyouan-team
+    route:
+      receiver: huyouan-team
+defaultRules:
+  create: true
+additionalPrometheusRulesMap:
+  huyouan:
+    groups:
+      - name: huyouan.api
+        rules:
+          - alert: HighErrorRate
+            expr: sum(rate(http_requests_total{status=~"5.."}[5m])) / sum(rate(http_requests_total[5m])) > 0.01
+            for: 5m
+            labels: { severity: page, team: platform }
+            annotations:
+              summary: API 5xx error rate above 1%
+          - alert: HighP95Latency
+            expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le)) > 1
+            for: 5m
+            labels: { severity: page, team: platform }
+            annotations:
+              summary: API p95 latency above 1s
+          - alert: PodCrashLooping
+            expr: increase(kube_pod_container_status_restarts_total{namespace="huyouan"}[10m]) > 3
+            for: 0m
+            labels: { severity: page, team: platform }
+            annotations:
+              summary: Pod {{ $labels.pod }} is crash-looping
