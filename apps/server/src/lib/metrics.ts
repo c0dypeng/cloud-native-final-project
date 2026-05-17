@@ -1,4 +1,10 @@
-import { Registry, collectDefaultMetrics, Counter, Histogram, Gauge } from "prom-client";
+import {
+  Registry,
+  collectDefaultMetrics,
+  Counter,
+  Histogram,
+  Gauge,
+} from "prom-client";
 
 export const register = new Registry();
 
@@ -28,5 +34,37 @@ export const activeEventsTotal = new Gauge({
 export const unreportedUsersTotal = new Gauge({
   name: "unreported_users_total",
   help: "Number of users who have not reported for any active event",
+  registers: [register],
+});
+
+export const sseActiveConnections = new Gauge({
+  name: "sse_active_connections",
+  help: "Number of currently active SSE connections",
+  registers: [register],
+});
+
+export const reportSubmitTotal = new Counter({
+  name: "report_submit_total",
+  help: "Total number of safety report submissions",
+  labelNames: ["status", "result"], // status: safe|need_help, result: success|error
+  registers: [register],
+});
+
+export const reminderEmailsTotal = new Counter({
+  name: "reminder_emails_total",
+  help: "Reminder emails attempted",
+  labelNames: ["result"], // sent|error|dry_run|skipped
+  registers: [register],
+});
+
+export const statsCacheHits = new Counter({
+  name: "stats_cache_hits_total",
+  help: "Stats endpoint cache hits",
+  registers: [register],
+});
+
+export const statsCacheMisses = new Counter({
+  name: "stats_cache_misses_total",
+  help: "Stats endpoint cache misses",
   registers: [register],
 });
