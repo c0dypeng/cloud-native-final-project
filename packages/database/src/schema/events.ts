@@ -12,6 +12,7 @@ export const eventTypeEnum = pgEnum("event_type", [
   "fire",
   "security",
   "accident",
+  "drill",
   "other",
 ]);
 

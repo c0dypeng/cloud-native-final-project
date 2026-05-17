@@ -10,7 +10,16 @@
     "CORS_ORIGIN",
     "NEXT_PUBLIC_API_URL",
     "NEXT_PUBLIC_SITE_URL",
-    "API_URL"
+    "API_URL",
+    "REDIS_URL",
+    "RESEND_API_KEY",
+    "RESEND_FROM_EMAIL",
+    "REMINDER_JOB_DISABLED",
+    "METRICS_TOKEN",
+    "SEED_ADMIN_USERNAME",
+    "SEED_ADMIN_PASSWORD",
+    "SEED_USER_PASSWORD",
+    "SEED_SCALE"
   ],
   "tasks": {
     "build": {

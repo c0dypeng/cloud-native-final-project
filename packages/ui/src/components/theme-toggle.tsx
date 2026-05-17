@@ -186,7 +186,11 @@ export function ThemeToggle({
 
     // Use View Transitions API if available
     if ("startViewTransition" in document) {
-      (document as any).startViewTransition(() => {
+      (
+        document as Document & {
+          startViewTransition?: (cb: () => void) => void;
+        }
+      ).startViewTransition?.(() => {
         setTheme(newTheme);
       });
     } else {
@@ -243,7 +247,11 @@ export function ThemeToggle({
 export const useThemeTransition = () => {
   const startTransition = useCallback((updateFn: () => void) => {
     if ("startViewTransition" in document) {
-      (document as any).startViewTransition(updateFn);
+      (
+        document as Document & {
+          startViewTransition?: (cb: () => void) => void;
+        }
+      ).startViewTransition?.(updateFn);
     } else {
       updateFn();
     }

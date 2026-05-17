@@ -20,6 +20,7 @@ export const users = pgTable("users", {
   managerId: uuid("manager_id").references((): AnyPgColumn => users.id),
   role: userRoleEnum("role").notNull().default("employee"),
   phone: text("phone"),
+  locale: text("locale").notNull().default("zh-TW"),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
