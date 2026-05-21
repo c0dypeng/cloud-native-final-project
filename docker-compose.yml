@@ -40,7 +40,7 @@ services:
     networks:
       - app-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -h localhost -p 6432 -U safety"]
+      test: ["CMD-SHELL", "PGPASSWORD=$$POSTGRESQL_PASSWORD /opt/bitnami/postgresql/bin/psql -h 127.0.0.1 -p 6432 -U safety -d safetydb -tAc 'select 1' >/dev/null"]
       interval: 5s
       timeout: 5s
       retries: 5

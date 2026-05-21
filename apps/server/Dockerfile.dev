@@ -1,12 +1,18 @@
 # syntax=docker/dockerfile:1
 
-FROM oven/bun:1
+FROM oven/bun:1.3.9
 
 WORKDIR /app
 
+# The server dev command uses `node --import tsx`; install real Node instead of
+# relying on Bun's node fallback shim.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends nodejs \
+ && rm -rf /var/lib/apt/lists/*
+
 # Copy package files
 COPY package.json bun.lock turbo.json ./
-COPY apps/server/package.json ./apps/server/
+COPY apps ./apps/
 COPY packages ./packages/
 
 # Install dependencies

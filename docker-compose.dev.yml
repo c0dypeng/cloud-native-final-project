@@ -42,6 +42,23 @@ services:
     networks:
       - app-network
 
+  redis:
+    image: redis:7-alpine
+    container_name: app-redis-dev
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
+    volumes:
+      - redis_dev_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   server:
     build:
       context: .
@@ -53,6 +70,7 @@ services:
       - NODE_ENV=development
       - PORT=4000
       - DATABASE_URL=postgresql://safety:${POSTGRES_PASSWORD:-devpassword}@pgbouncer:6432/safetydb
+      - REDIS_URL=redis://redis:6379
       - JWT_SECRET=${JWT_SECRET:-dev-jwt-secret-change-in-production}
       - JWT_EXPIRES_IN=8h
       - CORS_ORIGIN=http://localhost:3000
@@ -67,6 +85,8 @@ services:
     depends_on:
       pgbouncer:
         condition: service_started
+      redis:
+        condition: service_healthy
     networks:
       - app-network
     command: bun run --filter server dev
@@ -138,6 +158,7 @@ networks:
 
 volumes:
   postgres_dev_data:
+  redis_dev_data:
   server-node-modules:
   server-app-node-modules:
   web-node-modules:
