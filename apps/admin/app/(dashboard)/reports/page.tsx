@@ -12,6 +12,7 @@ import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
 import { verifySession } from "@/lib/dal";
 import { apiAdminServer } from "@/lib/api-server";
+import { formatDateTime } from "@/lib/format-date";
 
 export const dynamic = "force-dynamic";
 
@@ -76,12 +77,10 @@ export default async function ReportsPage() {
                         {EVENT_TYPE_LABEL[e.type] ?? e.type}
                       </Badge>
                       <span>
-                        建立於 {new Date(e.createdAt).toLocaleString("zh-TW")}
+                        建立於 {formatDateTime(e.createdAt)}
                       </span>
                       {e.closedAt && (
-                        <span>
-                          · 結束於 {new Date(e.closedAt).toLocaleString("zh-TW")}
-                        </span>
+                        <span>· 結束於 {formatDateTime(e.closedAt)}</span>
                       )}
                     </div>
                   </div>

@@ -17,7 +17,9 @@ const app: Express = express();
 app.use(helmet());
 
 // CORS — supports comma-separated CORS_ORIGIN list (e.g. web + admin origins).
-const corsOrigins = (process.env.CORS_ORIGIN ?? "http://localhost:3000")
+const corsOrigins = (
+  process.env.CORS_ORIGIN ?? "http://localhost:3000,http://localhost:3001"
+)
   .split(",")
   .map((o) => o.trim())
   .filter(Boolean);

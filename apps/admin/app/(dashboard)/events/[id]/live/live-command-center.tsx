@@ -33,6 +33,7 @@ import type {
   UnreportedUser,
 } from "@workspace/api-contracts";
 import { adminApi } from "@/lib/api-client";
+import { formatTime } from "@/lib/format-date";
 import { useSse } from "@/hooks/use-sse";
 
 type ActivityKind = "safe" | "need_help" | "reminder" | "event";
@@ -435,7 +436,7 @@ function MetricTile({
 }
 
 function FeedRow({ item }: { item: ActivityItem }) {
-  const time = new Date(item.at).toLocaleTimeString("zh-TW");
+  const time = formatTime(item.at);
   const styles = {
     safe: "border-success/20 bg-success/5",
     need_help: "border-destructive/30 bg-destructive/10",

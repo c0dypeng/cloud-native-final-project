@@ -23,6 +23,7 @@ import type {
   Report,
 } from "@workspace/api-contracts";
 import { api } from "@/lib/api-client";
+import { formatDateTime } from "@/lib/format-date";
 
 interface SafetyReportCardProps {
   event: Event;
@@ -64,11 +65,6 @@ export function SafetyReportCard({
     });
   }
 
-  const dateFmt = new Intl.DateTimeFormat(locale, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
-
   return (
     <Card
       className={cn(
@@ -91,7 +87,9 @@ export function SafetyReportCard({
               <span>{t("type", { type: tType(event.type) })}</span>
               <span aria-hidden>·</span>
               <span>
-                {t("createdAt", { date: dateFmt.format(new Date(event.createdAt)) })}
+                {t("createdAt", {
+                  date: formatDateTime(event.createdAt, locale),
+                })}
               </span>
             </CardDescription>
           </div>
@@ -171,7 +169,7 @@ export function SafetyReportCard({
         <CardFooter className="text-xs text-muted-foreground gap-1.5 border-t pt-4">
           <MapPin className="h-3.5 w-3.5" aria-hidden />
           {t("lastReported", {
-            date: dateFmt.format(new Date(currentReport.reportedAt)),
+            date: formatDateTime(currentReport.reportedAt, locale),
           })}
         </CardFooter>
       )}

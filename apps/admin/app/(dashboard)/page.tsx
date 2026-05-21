@@ -12,6 +12,7 @@ import { Button } from "@workspace/ui/components/button";
 import { verifySession } from "@/lib/dal";
 import { redirect } from "next/navigation";
 import { apiAdminServer } from "@/lib/api-server";
+import { formatDateTime } from "@/lib/format-date";
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
 
 export const dynamic = "force-dynamic";
@@ -97,7 +98,7 @@ export default async function DashboardPage() {
                       <div className="min-w-0">
                         <p className="font-medium truncate">{e.title}</p>
                         <p className="text-xs text-muted-foreground truncate">
-                          {new Date(e.createdAt).toLocaleString("zh-TW")}
+                          {formatDateTime(e.createdAt)}
                         </p>
                       </div>
                       <Badge variant="destructive">進行中</Badge>

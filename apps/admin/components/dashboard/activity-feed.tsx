@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { cn } from "@workspace/ui/lib/utils";
 import type { SseEvent } from "@workspace/api-contracts";
+import { formatTime } from "@/lib/format-date";
 import { useSse } from "@/hooks/use-sse";
 
 interface FeedItem {
@@ -113,7 +114,7 @@ export function ActivityFeed() {
               </p>
             )}
             <p className="text-[10px] text-muted-foreground mt-0.5">
-              {new Date(item.at).toLocaleTimeString("zh-TW")}
+              {formatTime(item.at)}
             </p>
           </div>
         </li>

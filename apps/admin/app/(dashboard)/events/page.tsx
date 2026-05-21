@@ -20,6 +20,7 @@ import {
 import { verifySession } from "@/lib/dal";
 import { redirect } from "next/navigation";
 import { apiAdminServer } from "@/lib/api-server";
+import { formatDateTime } from "@/lib/format-date";
 import { CreateEventDialog } from "@/components/events/create-event-dialog";
 
 export const dynamic = "force-dynamic";
@@ -107,12 +108,10 @@ export default async function EventsPage() {
                       )}
                     </TableCell>
                     <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
-                      {new Date(e.createdAt).toLocaleString("zh-TW")}
+                      {formatDateTime(e.createdAt)}
                     </TableCell>
                     <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
-                      {e.closedAt
-                        ? new Date(e.closedAt).toLocaleString("zh-TW")
-                        : "—"}
+                      {e.closedAt ? formatDateTime(e.closedAt) : "—"}
                     </TableCell>
                     <TableCell>
                       <Button variant="ghost" size="sm" asChild>

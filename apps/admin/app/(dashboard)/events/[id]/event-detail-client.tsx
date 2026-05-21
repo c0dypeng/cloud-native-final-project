@@ -54,6 +54,7 @@ import type {
   StatsResponse,
 } from "@workspace/api-contracts";
 import { adminApi } from "@/lib/api-client";
+import { formatDateTime } from "@/lib/format-date";
 import { useSse } from "@/hooks/use-sse";
 
 type Filter = "all" | "safe" | "need_help" | "not_reported";
@@ -318,9 +319,7 @@ export function EventDetailClient({
                       {r.user.departmentName ?? "—"}
                     </TableCell>
                     <TableCell className="hidden md:table-cell text-xs text-muted-foreground">
-                      {r.reportedAt
-                        ? new Date(r.reportedAt).toLocaleString("zh-TW")
-                        : "尚未回報"}
+                      {r.reportedAt ? formatDateTime(r.reportedAt) : "尚未回報"}
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
