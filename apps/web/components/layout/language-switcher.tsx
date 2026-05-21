@@ -6,6 +6,7 @@ import { Languages, Check } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -58,22 +59,24 @@ export function LanguageSwitcher({
         }
       />
       <DropdownMenuContent align="end">
-        <DropdownMenuLabel>{t("language")}</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        {OPTIONS.map((o) => (
-          <DropdownMenuItem
-            key={o.code}
-            onClick={() => pick(o.code)}
-            disabled={pending}
-          >
-            {o.code === current ? (
-              <Check className="mr-2 h-3.5 w-3.5" aria-hidden />
-            ) : (
-              <span className="mr-2 inline-block w-3.5" />
-            )}
-            {t(o.labelKey)}
-          </DropdownMenuItem>
-        ))}
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>{t("language")}</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          {OPTIONS.map((o) => (
+            <DropdownMenuItem
+              key={o.code}
+              onClick={() => pick(o.code)}
+              disabled={pending}
+            >
+              {o.code === current ? (
+                <Check className="mr-2 h-3.5 w-3.5" aria-hidden />
+              ) : (
+                <span className="mr-2 inline-block w-3.5" />
+              )}
+              {t(o.labelKey)}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
   );

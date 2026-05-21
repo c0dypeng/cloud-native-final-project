@@ -13,7 +13,6 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@workspace/ui/components/dropdown-menu";
@@ -45,7 +44,7 @@ export function NavUser({ user }: { user: UserPublic }) {
     <SidebarMenu>
       <SidebarMenuItem>
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+          <DropdownMenuTrigger asChild nativeButton>
             <SidebarMenuButton
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
@@ -68,7 +67,7 @@ export function NavUser({ user }: { user: UserPublic }) {
             align="end"
             sideOffset={4}
           >
-            <DropdownMenuLabel className="p-0 font-normal">
+            <div className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg bg-primary text-primary-foreground">
                   <AvatarFallback className="rounded-lg bg-primary text-primary-foreground">
@@ -82,7 +81,7 @@ export function NavUser({ user }: { user: UserPublic }) {
                   </span>
                 </div>
               </div>
-            </DropdownMenuLabel>
+            </div>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem asChild>
@@ -93,14 +92,16 @@ export function NavUser({ user }: { user: UserPublic }) {
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <form action={logoutAction}>
-              <DropdownMenuItem asChild>
-                <button type="submit" className="flex w-full items-center">
-                  <LogOut className="mr-2 h-4 w-4" />
-                  {tNav("logout")}
-                </button>
-              </DropdownMenuItem>
-            </form>
+            <DropdownMenuGroup>
+              <form action={logoutAction}>
+                <DropdownMenuItem asChild nativeButton>
+                  <button type="submit" className="flex w-full items-center">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    {tNav("logout")}
+                  </button>
+                </DropdownMenuItem>
+              </form>
+            </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>
