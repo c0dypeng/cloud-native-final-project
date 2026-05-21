@@ -64,7 +64,7 @@ export function UsersClientPage({ initialUsers, departments }: Props) {
   const tRoles = useTranslations("roles");
   const tStatus = useTranslations("status");
   const router = useRouter();
-  const [users] = useState<UserAdminView[]>(initialUsers);
+  const users = initialUsers;
   const [query, setQuery] = useState("");
 
   const filtered = useMemo(() => {
