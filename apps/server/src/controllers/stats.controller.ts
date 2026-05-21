@@ -12,6 +12,7 @@ import {
 } from "./reports.controller.js";
 import { getSubordinates } from "../lib/team.js";
 import { isUuid } from "../middleware/validate.js";
+import { getRequestLocale } from "../lib/locale.js";
 
 // 15s smooths bursts well while still feeling instant alongside SSE pushes
 // that arrive on every report submission.
@@ -25,7 +26,8 @@ export async function getStats(req: Request, res: Response) {
     return;
   }
 
-  const key = statsCacheKey(eventId);
+  const locale = getRequestLocale(req);
+  const key = statsCacheKey(eventId, locale);
   const cached = await cacheGet<StatsResponse>(key);
   if (cached) {
     statsCacheHits.inc();
@@ -34,7 +36,7 @@ export async function getStats(req: Request, res: Response) {
   }
   statsCacheMisses.inc();
 
-  const { overall, byDepartment } = await computeEventStats(eventId);
+  const { overall, byDepartment } = await computeEventStats(eventId, locale);
   const payload = {
     eventId,
     overall,
@@ -67,7 +69,8 @@ export async function getUnreported(req: Request, res: Response) {
       res.status(403).json({ error: "Forbidden" });
       return;
     }
-    const sub = await getSubordinates(user.id);
+    const locale = getRequestLocale(req);
+    const sub = await getSubordinates(user.id, locale);
     scope = sub.map((s) => s.id);
     if (scope.length === 0) {
       res.json({ users: [] });
@@ -75,6 +78,6 @@ export async function getUnreported(req: Request, res: Response) {
     }
   }
 
-  const users = await listUnreportedUsers(eventId, scope);
+  const users = await listUnreportedUsers(eventId, scope, getRequestLocale(req));
   res.json({ users });
 }

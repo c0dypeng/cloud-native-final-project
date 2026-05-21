@@ -1,15 +1,21 @@
 import type { Request, Response } from "express";
-import { asc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import { db } from "../lib/db.js";
-import { departments, users } from "@workspace/database";
+import { departmentTranslations, departments, users } from "@workspace/database";
 import {
   deptCreateInputSchema,
   deptUpdateInputSchema,
   type DeptTreeNode,
 } from "@workspace/api-contracts";
 import { isUuid } from "../middleware/validate.js";
+import { getRequestLocale } from "../lib/locale.js";
 
-function serialize(row: typeof departments.$inferSelect) {
+function serialize(row: {
+  id: string;
+  name: string;
+  parentId: string | null;
+  createdAt: Date;
+}) {
   return {
     id: row.id,
     name: row.name,
@@ -19,14 +25,46 @@ function serialize(row: typeof departments.$inferSelect) {
 }
 
 // GET /api/departments
-export async function listDepartments(_req: Request, res: Response) {
-  const rows = await db.select().from(departments).orderBy(asc(departments.name));
+export async function listDepartments(req: Request, res: Response) {
+  const locale = getRequestLocale(req);
+  const rows = await db
+    .select({
+      id: departments.id,
+      name: sql<string>`coalesce(${departmentTranslations.name}, ${departments.name})`,
+      parentId: departments.parentId,
+      createdAt: departments.createdAt,
+    })
+    .from(departments)
+    .leftJoin(
+      departmentTranslations,
+      and(
+        eq(departmentTranslations.departmentId, departments.id),
+        eq(departmentTranslations.locale, locale),
+      ),
+    )
+    .orderBy(asc(sql`coalesce(${departmentTranslations.name}, ${departments.name})`));
   res.json({ departments: rows.map(serialize) });
 }
 
 // GET /api/departments/tree
-export async function getDepartmentTree(_req: Request, res: Response) {
-  const rows = await db.select().from(departments).orderBy(asc(departments.name));
+export async function getDepartmentTree(req: Request, res: Response) {
+  const locale = getRequestLocale(req);
+  const rows = await db
+    .select({
+      id: departments.id,
+      name: sql<string>`coalesce(${departmentTranslations.name}, ${departments.name})`,
+      parentId: departments.parentId,
+      createdAt: departments.createdAt,
+    })
+    .from(departments)
+    .leftJoin(
+      departmentTranslations,
+      and(
+        eq(departmentTranslations.departmentId, departments.id),
+        eq(departmentTranslations.locale, locale),
+      ),
+    )
+    .orderBy(asc(sql`coalesce(${departmentTranslations.name}, ${departments.name})`));
   const counts = await db
     .select({
       departmentId: users.departmentId,

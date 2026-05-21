@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import { and, asc, eq, ilike, or, sql } from "drizzle-orm";
 import { db } from "../lib/db.js";
-import { users, departments } from "@workspace/database";
+import { departmentTranslations, users, departments } from "@workspace/database";
 import {
   userCreateInputSchema,
   userUpdateInputSchema,
@@ -10,6 +10,7 @@ import {
   userListQuerySchema,
 } from "@workspace/api-contracts";
 import { isUuid } from "../middleware/validate.js";
+import { getRequestLocale } from "../lib/locale.js";
 
 function serializeUser(row: {
   id: string;
@@ -51,6 +52,7 @@ export async function listUsers(req: Request, res: Response) {
     return;
   }
   const { q, role, departmentId, isActive, limit, offset } = parsed.data;
+  const locale = getRequestLocale(req);
 
   const conditions = [] as ReturnType<typeof eq>[];
   if (role) conditions.push(eq(users.role, role));
@@ -74,7 +76,7 @@ export async function listUsers(req: Request, res: Response) {
       name: users.name,
       role: users.role,
       departmentId: users.departmentId,
-      departmentName: departments.name,
+      departmentName: sql<string | null>`coalesce(${departmentTranslations.name}, ${departments.name})`,
       managerId: users.managerId,
       managerName: managerSelf,
       phone: users.phone,
@@ -84,6 +86,13 @@ export async function listUsers(req: Request, res: Response) {
     })
     .from(users)
     .leftJoin(departments, eq(departments.id, users.departmentId))
+    .leftJoin(
+      departmentTranslations,
+      and(
+        eq(departmentTranslations.departmentId, departments.id),
+        eq(departmentTranslations.locale, locale),
+      ),
+    )
     .leftJoin(
       sql`users AS mgr`,
       sql`mgr.id = ${users.managerId}`,

@@ -8,6 +8,13 @@
       "when": 1779006135734,
       "tag": "0000_furry_red_hulk",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1779356881098,
+      "tag": "0001_condemned_maddog",
+      "breakpoints": true
     }
   ]
 }

@@ -4,6 +4,7 @@ import { db } from "../lib/db.js";
 import { safetyReports } from "@workspace/database";
 import { getSubordinates } from "../lib/team.js";
 import { isUuid } from "../middleware/validate.js";
+import { getRequestLocale } from "../lib/locale.js";
 
 // GET /api/manager/team
 export async function getTeam(req: Request, res: Response) {
@@ -11,7 +12,7 @@ export async function getTeam(req: Request, res: Response) {
     res.status(403).json({ error: "Forbidden" });
     return;
   }
-  const members = await getSubordinates(req.user.id);
+  const members = await getSubordinates(req.user.id, getRequestLocale(req));
   res.json({ members });
 }
 
@@ -27,7 +28,7 @@ export async function getTeamStatus(req: Request, res: Response) {
     return;
   }
 
-  const members = await getSubordinates(req.user.id);
+  const members = await getSubordinates(req.user.id, getRequestLocale(req));
   if (members.length === 0) {
     res.json({ eventId, members: [] });
     return;

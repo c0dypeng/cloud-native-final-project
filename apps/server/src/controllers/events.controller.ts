@@ -1,13 +1,25 @@
 import type { Request, Response } from "express";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { db } from "../lib/db.js";
-import { events } from "@workspace/database";
+import { eventTranslations, events } from "@workspace/database";
 import { eventCreateInputSchema } from "@workspace/api-contracts";
 import { broadcastAll } from "../lib/sse.js";
-import { cacheDel, statsCacheKey } from "../lib/redis.js";
+import { cacheDel, statsCacheKeys } from "../lib/redis.js";
 import { isUuid } from "../middleware/validate.js";
+import { getRequestLocale } from "../lib/locale.js";
 
-function serializeEvent(e: typeof events.$inferSelect) {
+type EventRow = typeof events.$inferSelect;
+
+function serializeEvent(e: {
+  id: string;
+  title: string;
+  description: string | null;
+  type: EventRow["type"];
+  status: EventRow["status"];
+  createdBy: string;
+  createdAt: Date;
+  closedAt: Date | null;
+}) {
   return {
     id: e.id,
     title: e.title,
@@ -26,12 +38,29 @@ function serializeEvent(e: typeof events.$inferSelect) {
 export async function listEvents(req: Request, res: Response) {
   const isAdmin = Boolean(req.adminId);
   const isManager = req.user?.role === "manager";
+  const locale = getRequestLocale(req);
 
   const where = !isAdmin && !isManager ? eq(events.status, "active") : undefined;
 
   const rows = await db
-    .select()
+    .select({
+      id: events.id,
+      title: sql<string>`coalesce(${eventTranslations.title}, ${events.title})`,
+      description: sql<string | null>`coalesce(${eventTranslations.description}, ${events.description})`,
+      type: events.type,
+      status: events.status,
+      createdBy: events.createdBy,
+      createdAt: events.createdAt,
+      closedAt: events.closedAt,
+    })
     .from(events)
+    .leftJoin(
+      eventTranslations,
+      and(
+        eq(eventTranslations.eventId, events.id),
+        eq(eventTranslations.locale, locale),
+      ),
+    )
     .where(where)
     .orderBy(desc(events.createdAt));
 
@@ -45,7 +74,28 @@ export async function getEvent(req: Request, res: Response) {
     res.status(400).json({ error: "Invalid id" });
     return;
   }
-  const [event] = await db.select().from(events).where(eq(events.id, id)).limit(1);
+  const locale = getRequestLocale(req);
+  const [event] = await db
+    .select({
+      id: events.id,
+      title: sql<string>`coalesce(${eventTranslations.title}, ${events.title})`,
+      description: sql<string | null>`coalesce(${eventTranslations.description}, ${events.description})`,
+      type: events.type,
+      status: events.status,
+      createdBy: events.createdBy,
+      createdAt: events.createdAt,
+      closedAt: events.closedAt,
+    })
+    .from(events)
+    .leftJoin(
+      eventTranslations,
+      and(
+        eq(eventTranslations.eventId, events.id),
+        eq(eventTranslations.locale, locale),
+      ),
+    )
+    .where(eq(events.id, id))
+    .limit(1);
   if (!event) {
     res.status(404).json({ error: "Event not found" });
     return;
@@ -126,7 +176,7 @@ export async function closeEvent(req: Request, res: Response) {
     return;
   }
 
-  await cacheDel(statsCacheKey(updated.id));
+  await cacheDel(...statsCacheKeys(updated.id));
 
   broadcastAll({
     type: "event_closed",

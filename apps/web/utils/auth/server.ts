@@ -6,6 +6,7 @@ import {
   meResponseSchema,
   type UserPublic,
 } from "@workspace/api-contracts";
+import { LOCALE_COOKIE } from "@/i18n/config";
 
 const API_URL = process.env.API_URL ?? "http://localhost:4000";
 export const USER_COOKIE = "token";
@@ -66,7 +67,12 @@ export async function requireRole(
  */
 export async function authHeaders(): Promise<Record<string, string>> {
   const token = await getToken();
-  return token ? { authorization: `Bearer ${token}` } : {};
+  const store = await cookies();
+  const locale = store.get(LOCALE_COOKIE)?.value;
+  return {
+    ...(token ? { authorization: `Bearer ${token}` } : {}),
+    ...(locale ? { "x-locale": locale } : {}),
+  };
 }
 
 export { API_URL };

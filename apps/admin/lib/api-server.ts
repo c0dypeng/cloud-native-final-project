@@ -13,11 +13,16 @@ import {
 import { apiFetch } from "./api";
 import { env } from "./env";
 import { ADMIN_COOKIE } from "./dal";
+import { LOCALE_COOKIE } from "@/i18n/config";
 
 async function adminHeaders(): Promise<Record<string, string>> {
   const store = await cookies();
   const id = store.get(ADMIN_COOKIE)?.value;
-  return id ? { "x-admin-session": id } : {};
+  const locale = store.get(LOCALE_COOKIE)?.value;
+  return {
+    ...(id ? { "x-admin-session": id } : {}),
+    ...(locale ? { "x-locale": locale } : {}),
+  };
 }
 
 async function svrCall<S extends Parameters<typeof apiFetch>[1]>(

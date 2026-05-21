@@ -9,7 +9,12 @@
  * truncates users/departments first if --reset is supplied).
  */
 import { createDb } from "./db.js";
-import { adminAccounts, departments, users } from "./schema/index.js";
+import {
+  adminAccounts,
+  departmentTranslations,
+  departments,
+  users,
+} from "./schema/index.js";
 import bcrypt from "bcryptjs";
 import { faker } from "@faker-js/faker";
 import { sql } from "drizzle-orm";
@@ -67,46 +72,81 @@ if (existingDepts.length > 0 && !RESET) {
 
 interface DeptSeed {
   name: string;
+  translations?: Record<"en", { name: string }>;
   children?: DeptSeed[];
 }
 
 const tree: DeptSeed = {
   name: "護你安企業",
+  translations: { en: { name: "HuYouAn Enterprise" } },
   children: [
     {
       name: "製造一廠",
+      translations: { en: { name: "Manufacturing Plant 1" } },
       children: [
-        { name: "一廠鑄造課" },
-        { name: "一廠加工課" },
-        { name: "一廠品保課" },
+        { name: "一廠鑄造課", translations: { en: { name: "Plant 1 Casting" } } },
+        { name: "一廠加工課", translations: { en: { name: "Plant 1 Machining" } } },
+        {
+          name: "一廠品保課",
+          translations: { en: { name: "Plant 1 Quality Assurance" } },
+        },
       ],
     },
     {
       name: "製造二廠",
+      translations: { en: { name: "Manufacturing Plant 2" } },
       children: [
-        { name: "二廠鑄造課" },
-        { name: "二廠加工課" },
-        { name: "二廠品保課" },
+        { name: "二廠鑄造課", translations: { en: { name: "Plant 2 Casting" } } },
+        { name: "二廠加工課", translations: { en: { name: "Plant 2 Machining" } } },
+        {
+          name: "二廠品保課",
+          translations: { en: { name: "Plant 2 Quality Assurance" } },
+        },
       ],
     },
     {
       name: "資訊處",
+      translations: { en: { name: "Information Technology Division" } },
       children: [
-        { name: "基礎架構組" },
-        { name: "應用系統組" },
-        { name: "資安組" },
+        {
+          name: "基礎架構組",
+          translations: { en: { name: "Infrastructure Team" } },
+        },
+        {
+          name: "應用系統組",
+          translations: { en: { name: "Application Systems Team" } },
+        },
+        { name: "資安組", translations: { en: { name: "Security Team" } } },
       ],
     },
     {
       name: "人資處",
-      children: [{ name: "招募組" }, { name: "薪酬組" }, { name: "訓練組" }],
+      translations: { en: { name: "Human Resources Division" } },
+      children: [
+        { name: "招募組", translations: { en: { name: "Recruiting Team" } } },
+        {
+          name: "薪酬組",
+          translations: { en: { name: "Compensation Team" } },
+        },
+        { name: "訓練組", translations: { en: { name: "Training Team" } } },
+      ],
     },
     {
       name: "環安處",
+      translations: { en: { name: "Environment, Health and Safety Division" } },
       children: [
-        { name: "安全衛生組" },
-        { name: "環保組" },
-        { name: "應變組" },
+        {
+          name: "安全衛生組",
+          translations: { en: { name: "Safety and Health Team" } },
+        },
+        {
+          name: "環保組",
+          translations: { en: { name: "Environmental Protection Team" } },
+        },
+        {
+          name: "應變組",
+          translations: { en: { name: "Emergency Response Team" } },
+        },
       ],
     },
   ],
@@ -136,6 +176,18 @@ async function insertDept(
     level,
     children: [],
   };
+  if (seed.translations) {
+    await db
+      .insert(departmentTranslations)
+      .values(
+        Object.entries(seed.translations).map(([locale, translation]) => ({
+          departmentId: node.id,
+          locale,
+          name: translation.name,
+        })),
+      )
+      .onConflictDoNothing();
+  }
   for (const child of seed.children ?? []) {
     node.children.push(await insertDept(child, node.id, level + 1));
   }

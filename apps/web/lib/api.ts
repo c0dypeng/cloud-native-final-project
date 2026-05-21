@@ -7,6 +7,7 @@ import { ApiResponseError } from "@workspace/api-contracts";
  * Server-side code should import API_URL from utils/auth/server instead.
  */
 export const PUBLIC_API_URL = "";
+const LOCALE_COOKIE = "huyouan-locale";
 
 interface ApiFetchOptions extends Omit<RequestInit, "body"> {
   body?: unknown;
@@ -35,6 +36,7 @@ export async function apiFetch<S extends ZodTypeAny>(
     ...rest,
     headers: {
       "content-type": "application/json",
+      ...browserLocaleHeader(),
       ...headers,
     },
   };
@@ -61,3 +63,12 @@ export async function apiFetch<S extends ZodTypeAny>(
 }
 
 export { ApiResponseError };
+
+function browserLocaleHeader(): Record<string, string> {
+  if (typeof document === "undefined") return {};
+  const locale = document.cookie
+    .split("; ")
+    .find((part) => part.startsWith(`${LOCALE_COOKIE}=`))
+    ?.split("=")[1];
+  return locale ? { "x-locale": decodeURIComponent(locale) } : {};
+}

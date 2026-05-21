@@ -1,13 +1,20 @@
 import type { Request, Response } from "express";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../lib/db.js";
-import { safetyReports, users, departments, events } from "@workspace/database";
+import {
+  departmentTranslations,
+  eventTranslations,
+  safetyReports,
+  users,
+  departments,
+  events,
+} from "@workspace/database";
 import { reportSubmitInputSchema } from "@workspace/api-contracts";
 import {
   broadcastToOversight,
   sendToManagerChain,
 } from "../lib/sse.js";
-import { cacheDel, statsCacheKey } from "../lib/redis.js";
+import { cacheDel, statsCacheKeys } from "../lib/redis.js";
 import {
   reportSubmitTotal,
   unreportedUsersTotal,
@@ -16,6 +23,7 @@ import { getManagerChain, getDirectManager, getSubordinates } from "../lib/team.
 import { sendEmail, needHelpAlertEmail } from "../lib/resend.js";
 import { isEventActive } from "./events.controller.js";
 import { isUuid } from "../middleware/validate.js";
+import { getRequestLocale, type SupportedLocale } from "../lib/locale.js";
 
 // POST /api/events/:eventId/report
 export async function submitReport(req: Request, res: Response) {
@@ -46,6 +54,7 @@ export async function submitReport(req: Request, res: Response) {
   }
 
   const now = new Date();
+  const locale = getRequestLocale(req);
   const [report] = await db
     .insert(safetyReports)
     .values({
@@ -73,7 +82,7 @@ export async function submitReport(req: Request, res: Response) {
     return;
   }
 
-  await cacheDel(statsCacheKey(eventId));
+  await cacheDel(...statsCacheKeys(eventId));
   reportSubmitTotal.inc({ status: parsed.data.status, result: "success" });
 
   // Always broadcast a report_submitted event to oversight (manager/admin)
@@ -91,8 +100,17 @@ export async function submitReport(req: Request, res: Response) {
   if (parsed.data.status === "need_help") {
     const [eventRow, userRow, managerChain, direct] = await Promise.all([
       db
-        .select({ title: events.title })
+        .select({
+          title: sql<string>`coalesce(${eventTranslations.title}, ${events.title})`,
+        })
         .from(events)
+        .leftJoin(
+          eventTranslations,
+          and(
+            eq(eventTranslations.eventId, events.id),
+            eq(eventTranslations.locale, locale),
+          ),
+        )
         .where(eq(events.id, eventId))
         .limit(1)
         .then((r) => r[0] ?? null),
@@ -101,10 +119,17 @@ export async function submitReport(req: Request, res: Response) {
           name: users.name,
           phone: users.phone,
           departmentId: users.departmentId,
-          departmentName: departments.name,
+          departmentName: sql<string | null>`coalesce(${departmentTranslations.name}, ${departments.name})`,
         })
         .from(users)
         .leftJoin(departments, eq(departments.id, users.departmentId))
+        .leftJoin(
+          departmentTranslations,
+          and(
+            eq(departmentTranslations.departmentId, departments.id),
+            eq(departmentTranslations.locale, locale),
+          ),
+        )
         .where(eq(users.id, req.user.id))
         .limit(1)
         .then((r) => r[0] ?? null),
@@ -161,6 +186,7 @@ export async function listReports(req: Request, res: Response) {
   }
   const isAdmin = Boolean(req.adminId);
   const user = req.user;
+  const locale = getRequestLocale(req);
 
   let userIdFilter: string[] | null = null;
   if (!isAdmin) {
@@ -189,11 +215,18 @@ export async function listReports(req: Request, res: Response) {
       userEmail: users.email,
       userPhone: users.phone,
       departmentId: users.departmentId,
-      departmentName: departments.name,
+      departmentName: sql<string | null>`coalesce(${departmentTranslations.name}, ${departments.name})`,
     })
     .from(safetyReports)
     .innerJoin(users, eq(users.id, safetyReports.userId))
     .leftJoin(departments, eq(departments.id, users.departmentId))
+    .leftJoin(
+      departmentTranslations,
+      and(
+        eq(departmentTranslations.departmentId, departments.id),
+        eq(departmentTranslations.locale, locale),
+      ),
+    )
     .where(
       userIdFilter
         ? and(
@@ -228,24 +261,29 @@ export async function listReports(req: Request, res: Response) {
 }
 
 /** Helper for stats — total active users grouped by department + report counts. */
-export async function computeEventStats(eventId: string) {
+export async function computeEventStats(
+  eventId: string,
+  locale: SupportedLocale = "zh-TW",
+) {
   // One query: for every active user, left-join their safety_report for this event.
   // Counts per department + grand total.
   const rows = await db.execute(sql`
     SELECT
       u.department_id AS "departmentId",
-      d.name          AS "departmentName",
+      COALESCE(dt.name, d.name) AS "departmentName",
       COUNT(*)::int                                                    AS "total",
       COUNT(*) FILTER (WHERE r.status = 'safe')::int                   AS "safe",
       COUNT(*) FILTER (WHERE r.status = 'need_help')::int              AS "needHelp",
       COUNT(*) FILTER (WHERE r.id IS NULL OR r.status = 'not_reported')::int AS "notReported"
     FROM users u
     LEFT JOIN departments d ON d.id = u.department_id
+    LEFT JOIN department_translations dt
+      ON dt.department_id = d.id AND dt.locale = ${locale}
     LEFT JOIN safety_reports r
       ON r.user_id = u.id AND r.event_id = ${eventId}
     WHERE u.is_active = true AND u.role IN ('employee', 'manager')
-    GROUP BY u.department_id, d.name
-    ORDER BY d.name NULLS LAST
+    GROUP BY u.department_id, COALESCE(dt.name, d.name)
+    ORDER BY COALESCE(dt.name, d.name) NULLS LAST
   `);
   const data = rows as unknown as Array<{
     departmentId: string | null;
@@ -287,21 +325,27 @@ export async function computeEventStats(eventId: string) {
 }
 
 /** Helper for unreported list — all users without report (or 'not_reported'). */
-export async function listUnreportedUsers(eventId: string, scope?: string[]) {
+export async function listUnreportedUsers(
+  eventId: string,
+  scope?: string[],
+  locale: SupportedLocale = "zh-TW",
+) {
   const result = await db.execute(sql`
     SELECT
       u.id, u.name, u.email, u.phone,
       u.department_id AS "departmentId",
-      d.name AS "departmentName"
+      COALESCE(dt.name, d.name) AS "departmentName"
     FROM users u
     LEFT JOIN departments d ON d.id = u.department_id
+    LEFT JOIN department_translations dt
+      ON dt.department_id = d.id AND dt.locale = ${locale}
     LEFT JOIN safety_reports r
       ON r.user_id = u.id AND r.event_id = ${eventId}
     WHERE u.is_active = true
       AND u.role IN ('employee', 'manager')
       AND (r.id IS NULL OR r.status = 'not_reported')
       ${scope ? sql`AND u.id IN (${sql.join(scope.map((x) => sql`${x}`), sql`, `)})` : sql``}
-    ORDER BY d.name NULLS LAST, u.name
+    ORDER BY COALESCE(dt.name, d.name) NULLS LAST, u.name
   `);
   return result as unknown as Array<{
     id: string;

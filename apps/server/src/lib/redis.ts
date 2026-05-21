@@ -82,8 +82,12 @@ export async function counterIncrWithTtl(
   return typeof value === "number" ? value : Number(value);
 }
 
-export function statsCacheKey(eventId: string): string {
-  return `stats:${eventId}`;
+export function statsCacheKey(eventId: string, locale = "zh-TW"): string {
+  return `stats:${eventId}:${locale}`;
+}
+
+export function statsCacheKeys(eventId: string): string[] {
+  return [statsCacheKey(eventId, "zh-TW"), statsCacheKey(eventId, "en")];
 }
 
 /**

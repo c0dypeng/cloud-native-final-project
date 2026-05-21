@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import { db } from "./db.js";
+import type { SupportedLocale } from "./locale.js";
 
 export interface TeamRow {
   id: string;
@@ -17,7 +18,10 @@ export interface TeamRow {
  * Return every active user underneath `managerId` in the management chain
  * (recursive). `depth = 1` is a direct report. Excludes self.
  */
-export async function getSubordinates(managerId: string): Promise<TeamRow[]> {
+export async function getSubordinates(
+  managerId: string,
+  locale: SupportedLocale = "zh-TW",
+): Promise<TeamRow[]> {
   const result = await db.execute(sql`
     WITH RECURSIVE subordinates AS (
       SELECT u.id, u.name, u.email, u.phone, u.role,
@@ -35,11 +39,13 @@ export async function getSubordinates(managerId: string): Promise<TeamRow[]> {
     )
     SELECT s.id, s.name, s.email, s.phone, s.role,
            s.department_id AS "departmentId",
-           d.name AS "departmentName",
+           COALESCE(dt.name, d.name) AS "departmentName",
            s.manager_id AS "managerId",
            s.depth
     FROM subordinates s
     LEFT JOIN departments d ON d.id = s.department_id
+    LEFT JOIN department_translations dt
+      ON dt.department_id = d.id AND dt.locale = ${locale}
     ORDER BY s.depth ASC, s.name ASC
   `);
   return result as unknown as TeamRow[];
