@@ -12,6 +12,8 @@ import {
 import { Button } from "@workspace/ui/components/button";
 import { setLocaleAction } from "@/i18n/actions";
 
+const OPTIONS = ["zh-TW", "en", "ja"] as const;
+
 export function LanguageSwitcher() {
   const current = useLocale();
   const t = useTranslations("common.languages");
@@ -38,22 +40,16 @@ export function LanguageSwitcher() {
         }
       />
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => pick("zh-TW")}>
-          {current === "zh-TW" ? (
-            <Check className="mr-2 h-3.5 w-3.5" aria-hidden />
-          ) : (
-            <span className="mr-2 inline-block w-3.5" />
-          )}
-          {t("zh-TW")}
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => pick("en")}>
-          {current === "en" ? (
-            <Check className="mr-2 h-3.5 w-3.5" aria-hidden />
-          ) : (
-            <span className="mr-2 inline-block w-3.5" />
-          )}
-          {t("en")}
-        </DropdownMenuItem>
+        {OPTIONS.map((code) => (
+          <DropdownMenuItem key={code} onClick={() => pick(code)}>
+            {current === code ? (
+              <Check className="mr-2 h-3.5 w-3.5" aria-hidden />
+            ) : (
+              <span className="mr-2 inline-block w-3.5" />
+            )}
+            {t(code)}
+          </DropdownMenuItem>
+        ))}
       </DropdownMenuContent>
     </DropdownMenu>
   );

@@ -35,7 +35,10 @@ export default async function RootLayout({
   const locale = await getLocale();
   const messages = await getMessages();
   return (
-    <html lang={locale === "en" ? "en" : "zh-Hant"} suppressHydrationWarning>
+    <html
+      lang={locale === "en" ? "en" : locale === "ja" ? "ja" : "zh-Hant"}
+      suppressHydrationWarning
+    >
       <body
         className={`${fontSans.variable} ${fontMono.variable} font-sans antialiased `}
       >

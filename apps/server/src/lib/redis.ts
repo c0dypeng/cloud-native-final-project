@@ -87,7 +87,11 @@ export function statsCacheKey(eventId: string, locale = "zh-TW"): string {
 }
 
 export function statsCacheKeys(eventId: string): string[] {
-  return [statsCacheKey(eventId, "zh-TW"), statsCacheKey(eventId, "en")];
+  return [
+    statsCacheKey(eventId, "zh-TW"),
+    statsCacheKey(eventId, "en"),
+    statsCacheKey(eventId, "ja"),
+  ];
 }
 
 /**

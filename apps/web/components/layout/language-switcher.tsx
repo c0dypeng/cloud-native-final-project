@@ -18,6 +18,7 @@ import { setLocaleAction } from "@/i18n/actions";
 const OPTIONS = [
   { code: "zh-TW", labelKey: "languageZh" as const },
   { code: "en", labelKey: "languageEn" as const },
+  { code: "ja", labelKey: "languageJa" as const },
 ];
 
 export function LanguageSwitcher({
@@ -44,7 +45,7 @@ export function LanguageSwitcher({
           variant === "inline" ? (
             <Button variant="outline" size="sm" disabled={pending}>
               <Languages className="h-4 w-4 mr-1.5" aria-hidden />
-              {current === "en" ? t("languageEn") : t("languageZh")}
+              {t(OPTIONS.find((o) => o.code === current)?.labelKey ?? "languageZh")}
             </Button>
           ) : (
             <Button

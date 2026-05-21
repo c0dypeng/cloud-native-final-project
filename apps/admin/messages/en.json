@@ -40,7 +40,8 @@
     "retryLater": "Please try again later",
     "languages": {
       "zh-TW": "Traditional Chinese",
-      "en": "English"
+      "en": "English",
+      "ja": "Japanese"
     }
   },
   "status": {

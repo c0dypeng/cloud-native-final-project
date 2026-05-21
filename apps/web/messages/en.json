@@ -107,7 +107,8 @@
     "language": "Language",
     "languageDescription": "Switch the interface language (only affects your browser).",
     "languageZh": "繁體中文",
-    "languageEn": "English"
+    "languageEn": "English",
+    "languageJa": "Japanese"
   },
   "connection": {
     "live": "Live",

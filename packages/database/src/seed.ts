@@ -72,80 +72,164 @@ if (existingDepts.length > 0 && !RESET) {
 
 interface DeptSeed {
   name: string;
-  translations?: Record<"en", { name: string }>;
+  translations?: Partial<Record<"en" | "ja", { name: string }>>;
   children?: DeptSeed[];
 }
 
 const tree: DeptSeed = {
   name: "護你安企業",
-  translations: { en: { name: "HuYouAn Enterprise" } },
+  translations: {
+    en: { name: "HuYouAn Enterprise" },
+    ja: { name: "HuYouAn 企業" },
+  },
   children: [
     {
       name: "製造一廠",
-      translations: { en: { name: "Manufacturing Plant 1" } },
+      translations: {
+        en: { name: "Manufacturing Plant 1" },
+        ja: { name: "第1製造工場" },
+      },
       children: [
-        { name: "一廠鑄造課", translations: { en: { name: "Plant 1 Casting" } } },
-        { name: "一廠加工課", translations: { en: { name: "Plant 1 Machining" } } },
+        {
+          name: "一廠鑄造課",
+          translations: {
+            en: { name: "Plant 1 Casting" },
+            ja: { name: "第1工場 鋳造課" },
+          },
+        },
+        {
+          name: "一廠加工課",
+          translations: {
+            en: { name: "Plant 1 Machining" },
+            ja: { name: "第1工場 加工課" },
+          },
+        },
         {
           name: "一廠品保課",
-          translations: { en: { name: "Plant 1 Quality Assurance" } },
+          translations: {
+            en: { name: "Plant 1 Quality Assurance" },
+            ja: { name: "第1工場 品質保証課" },
+          },
         },
       ],
     },
     {
       name: "製造二廠",
-      translations: { en: { name: "Manufacturing Plant 2" } },
+      translations: {
+        en: { name: "Manufacturing Plant 2" },
+        ja: { name: "第2製造工場" },
+      },
       children: [
-        { name: "二廠鑄造課", translations: { en: { name: "Plant 2 Casting" } } },
-        { name: "二廠加工課", translations: { en: { name: "Plant 2 Machining" } } },
+        {
+          name: "二廠鑄造課",
+          translations: {
+            en: { name: "Plant 2 Casting" },
+            ja: { name: "第2工場 鋳造課" },
+          },
+        },
+        {
+          name: "二廠加工課",
+          translations: {
+            en: { name: "Plant 2 Machining" },
+            ja: { name: "第2工場 加工課" },
+          },
+        },
         {
           name: "二廠品保課",
-          translations: { en: { name: "Plant 2 Quality Assurance" } },
+          translations: {
+            en: { name: "Plant 2 Quality Assurance" },
+            ja: { name: "第2工場 品質保証課" },
+          },
         },
       ],
     },
     {
       name: "資訊處",
-      translations: { en: { name: "Information Technology Division" } },
+      translations: {
+        en: { name: "Information Technology Division" },
+        ja: { name: "情報システム部" },
+      },
       children: [
         {
           name: "基礎架構組",
-          translations: { en: { name: "Infrastructure Team" } },
+          translations: {
+            en: { name: "Infrastructure Team" },
+            ja: { name: "インフラチーム" },
+          },
         },
         {
           name: "應用系統組",
-          translations: { en: { name: "Application Systems Team" } },
+          translations: {
+            en: { name: "Application Systems Team" },
+            ja: { name: "アプリケーションシステムチーム" },
+          },
         },
-        { name: "資安組", translations: { en: { name: "Security Team" } } },
+        {
+          name: "資安組",
+          translations: {
+            en: { name: "Security Team" },
+            ja: { name: "セキュリティチーム" },
+          },
+        },
       ],
     },
     {
       name: "人資處",
-      translations: { en: { name: "Human Resources Division" } },
+      translations: {
+        en: { name: "Human Resources Division" },
+        ja: { name: "人事部" },
+      },
       children: [
-        { name: "招募組", translations: { en: { name: "Recruiting Team" } } },
+        {
+          name: "招募組",
+          translations: {
+            en: { name: "Recruiting Team" },
+            ja: { name: "採用チーム" },
+          },
+        },
         {
           name: "薪酬組",
-          translations: { en: { name: "Compensation Team" } },
+          translations: {
+            en: { name: "Compensation Team" },
+            ja: { name: "報酬チーム" },
+          },
         },
-        { name: "訓練組", translations: { en: { name: "Training Team" } } },
+        {
+          name: "訓練組",
+          translations: {
+            en: { name: "Training Team" },
+            ja: { name: "研修チーム" },
+          },
+        },
       ],
     },
     {
       name: "環安處",
-      translations: { en: { name: "Environment, Health and Safety Division" } },
+      translations: {
+        en: { name: "Environment, Health and Safety Division" },
+        ja: { name: "環境安全衛生部" },
+      },
       children: [
         {
           name: "安全衛生組",
-          translations: { en: { name: "Safety and Health Team" } },
+          translations: {
+            en: { name: "Safety and Health Team" },
+            ja: { name: "安全衛生チーム" },
+          },
         },
         {
           name: "環保組",
-          translations: { en: { name: "Environmental Protection Team" } },
+          translations: {
+            en: { name: "Environmental Protection Team" },
+            ja: { name: "環境保護チーム" },
+          },
         },
         {
           name: "應變組",
-          translations: { en: { name: "Emergency Response Team" } },
+          translations: {
+            en: { name: "Emergency Response Team" },
+            ja: { name: "緊急対応チーム" },
+          },
         },
       ],
     },

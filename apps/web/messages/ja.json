@@ -1,0 +1,131 @@
+{
+  "app": {
+    "name": "護你安",
+    "tagline": "従業員安全確認・対応システム"
+  },
+  "nav": {
+    "dashboard": "ダッシュボード",
+    "team": "チームケア",
+    "settings": "設定",
+    "logout": "ログアウト"
+  },
+  "roles": {
+    "employee": "従業員",
+    "manager": "マネージャー"
+  },
+  "login": {
+    "title": "ログイン",
+    "description": "会社のメールアドレスとパスワードを入力してください。アカウントは管理者が作成します。",
+    "email": "メール",
+    "password": "パスワード",
+    "submit": "ログイン",
+    "submitting": "ログイン中…",
+    "missingCredentials": "メールとパスワードを入力してください",
+    "invalidCredentials": "メールまたはパスワードが正しくありません",
+    "serverUnavailable": "サーバーに接続できません。しばらくしてから再試行してください。"
+  },
+  "dashboard": {
+    "greeting": "こんにちは、{name}",
+    "employeeSubtitle": "災害発生時は、すぐに安全状況を報告してください。",
+    "managerSubtitle": "自分の状況を確認し、チームの安全を見守りましょう。",
+    "teamStatusFor": "チーム状況 · {event}",
+    "noActiveEvent": {
+      "title": "進行中のイベントはありません",
+      "description": "会社が緊急イベントを開始すると、ここに報告ボタンが表示され、リアルタイム通知が届きます。",
+      "footer": "接続済み。新しいイベントは自動で届きます。"
+    }
+  },
+  "report": {
+    "title": "{title}",
+    "drillBadge": "訓練",
+    "createdAt": "{date} に作成",
+    "type": "種類: {type}",
+    "iAmSafe": "安全です",
+    "iNeedHelp": "助けが必要です",
+    "messagePlaceholder": "マネージャーへのメッセージを入力してください（例: B棟3階で閉じ込められています）",
+    "attachMessage": "メッセージを追加（任意）",
+    "lastReported": "最終報告: {date}",
+    "submittedSafe": "安全として報告済み",
+    "submittedNeedHelp": "助けが必要として報告済み。マネージャーに通知されました",
+    "submitFailed": "報告に失敗しました",
+    "retryHint": "もう一度お試しください",
+    "statusReportedSafe": "報告済み · 安全",
+    "statusReportedNeedHelp": "報告済み · 助けが必要",
+    "statusNotReported": "未報告"
+  },
+  "team": {
+    "header": "チームケア",
+    "eventLabel": "イベント: {event}",
+    "noEventLabel": "進行中のイベントはありません。チームの連絡先は確認できます。",
+    "memberCount": "自分のチーム ({count})",
+    "searchPlaceholder": "名前、メール、部門を検索…",
+    "filterAll": "すべて",
+    "filterNotReported": "未報告",
+    "filterSafe": "安全",
+    "filterNeedHelp": "助けが必要",
+    "emptyAll": "チームメンバーはいません",
+    "emptyFiltered": "一致するメンバーはいません",
+    "deptLevel": "{dept} · レベル {depth}",
+    "managerBadge": "マネージャー",
+    "callButton": "電話",
+    "emailButton": "メール"
+  },
+  "summary": {
+    "title": "チーム報告サマリー",
+    "safe": "安全",
+    "needHelp": "助けが必要",
+    "notReported": "未報告",
+    "totalLabel": "{total} 件 · 回答率 {rate}"
+  },
+  "unreported": {
+    "title": "未報告のチームメンバー",
+    "allReported": "すべてのチームメンバーが報告済みです。問題ありません。",
+    "needsReminder": "{count} 人にリマインドが必要です",
+    "fullCare": "全リスト",
+    "more": "ほか {count} 人"
+  },
+  "needHelp": {
+    "alertTitle": "{name} さんが助けを必要としています",
+    "willHandle": "対応します",
+    "close": "閉じる"
+  },
+  "reminderToast": {
+    "self": "リマインダー: 安全状況を報告してください",
+    "manager": "リマインダー: {count} 人の部下がまだ報告していません",
+    "newEvent": "新しい緊急イベント: {title}",
+    "newEventDescription": "今すぐ安全状況を報告してください。",
+    "eventClosed": "イベントは終了しました"
+  },
+  "settings": {
+    "title": "設定",
+    "subtitle": "アカウント情報と設定を確認します。",
+    "accountInfo": "アカウント情報",
+    "accountInfoNote": "管理者によって作成されています。変更が必要な場合は管理者に連絡してください。",
+    "name": "名前",
+    "email": "メール",
+    "role": "役割",
+    "language": "言語",
+    "languageDescription": "表示言語を切り替えます（このブラウザのみに反映されます）。",
+    "languageZh": "繁體中文",
+    "languageEn": "English",
+    "languageJa": "日本語"
+  },
+  "connection": {
+    "live": "ライブ",
+    "reconnecting": "再接続中…",
+    "liveTitle": "リアルタイム更新に接続済み",
+    "reconnectingTitle": "リアルタイム更新に再接続中"
+  },
+  "offline": {
+    "title": "オフラインです",
+    "description": "護你安はリアルタイム報告にインターネット接続が必要です。ネットワークを確認して再試行してください。"
+  },
+  "eventType": {
+    "earthquake": "地震",
+    "fire": "火災",
+    "security": "情報セキュリティ",
+    "accident": "事故",
+    "drill": "訓練",
+    "other": "その他"
+  }
+}

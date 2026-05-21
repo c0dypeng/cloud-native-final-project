@@ -107,7 +107,8 @@
     "language": "語言偏好",
     "languageDescription": "切換介面語言（僅影響您自己的瀏覽器）。",
     "languageZh": "繁體中文",
-    "languageEn": "English"
+    "languageEn": "English",
+    "languageJa": "日本語"
   },
   "connection": {
     "live": "即時連線中",
