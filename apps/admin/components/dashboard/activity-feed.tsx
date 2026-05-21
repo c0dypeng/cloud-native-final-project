@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   CheckCircle2,
   AlertTriangle,
@@ -25,6 +26,7 @@ interface FeedItem {
 const MAX = 25;
 
 export function ActivityFeed() {
+  const t = useTranslations("activityFeed");
   const [items, setItems] = useState<FeedItem[]>([]);
 
   useSse({
@@ -37,8 +39,8 @@ export function ActivityFeed() {
           kind: "report",
           text:
             e.status === "safe"
-              ? "員工回報「我安全」"
-              : "員工回報「需要協助」",
+              ? t("safeReport")
+              : t("needHelpReport"),
           tone: e.status === "safe" ? "success" : "destructive",
           at: e.timestamp,
         };
@@ -46,7 +48,7 @@ export function ActivityFeed() {
         item = {
           id: `c-${e.eventId}`,
           kind: "event",
-          text: `事件建立：${e.title}`,
+          text: t("eventCreated", { title: e.title }),
           tone: "destructive",
           at: e.timestamp,
         };
@@ -54,7 +56,7 @@ export function ActivityFeed() {
         item = {
           id: `x-${e.eventId}-${e.timestamp}`,
           kind: "event",
-          text: "事件結束",
+          text: t("eventClosed"),
           tone: "default",
           at: e.timestamp,
         };
@@ -62,7 +64,7 @@ export function ActivityFeed() {
         item = {
           id: `nh-${e.userId}-${e.timestamp}`,
           kind: "report",
-          text: `🚨 ${e.userName} 需要協助`,
+          text: t("needHelp", { name: e.userName }),
           detail: e.message ?? undefined,
           tone: "destructive",
           at: e.timestamp,
@@ -71,7 +73,7 @@ export function ActivityFeed() {
         item = {
           id: `cn-${e.timestamp}`,
           kind: "info",
-          text: "已連線即時更新",
+          text: t("connected"),
           tone: "default",
           at: now,
         };
@@ -86,7 +88,7 @@ export function ActivityFeed() {
     return (
       <div className="flex items-center gap-2 text-sm text-muted-foreground py-8 justify-center">
         <Activity className="h-4 w-4 animate-pulse" aria-hidden />
-        等待事件…
+        {t("waiting")}
       </div>
     );
   }

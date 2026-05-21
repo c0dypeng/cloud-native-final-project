@@ -7,6 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/card";
+import { getTranslations } from "next-intl/server";
 import { verifySession } from "@/lib/dal";
 import { apiAdminServer } from "@/lib/api-server";
 import { UsersClientPage } from "./users-client-page";
@@ -21,14 +22,16 @@ export default async function UsersPage() {
     apiAdminServer.users.list({ limit: 200 }),
     apiAdminServer.departments.list(),
   ]);
+  const t = await getTranslations("users");
+  const tCommon = await getTranslations("common");
 
   return (
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">使用者管理</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
           <p className="text-sm text-muted-foreground">
-            建立、編輯、停用員工帳號。
+            {t("description")}
           </p>
         </div>
       </header>
@@ -37,9 +40,9 @@ export default async function UsersPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <UsersIcon className="h-4 w-4" aria-hidden />
-            使用者列表
+            {t("list")}
           </CardTitle>
-          <CardDescription>共 {users.length} 位</CardDescription>
+          <CardDescription>{tCommon("usersCount", { count: users.length })}</CardDescription>
         </CardHeader>
         <CardContent>
           <UsersClientPage initialUsers={users} departments={departments} />

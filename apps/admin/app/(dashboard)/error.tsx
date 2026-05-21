@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@workspace/ui/components/button";
 import { AlertCircle } from "lucide-react";
 
@@ -11,6 +12,7 @@ export default function Error({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const t = useTranslations("error");
   useEffect(() => {
     console.error("Dashboard error:", error);
   }, [error]);
@@ -19,12 +21,12 @@ export default function Error({
     <div className="flex min-h-[400px] flex-col items-center justify-center gap-4">
       <AlertCircle className="h-12 w-12 text-destructive" />
       <div className="text-center">
-        <h2 className="text-2xl font-bold">發生錯誤</h2>
+        <h2 className="text-2xl font-bold">{t("title")}</h2>
         <p className="mt-2 text-muted-foreground">
-          {error.message || "發生未預期的錯誤"}
+          {error.message || t("unexpected")}
         </p>
       </div>
-      <Button onClick={reset}>重試</Button>
+      <Button onClick={reset}>{t("retry")}</Button>
     </div>
   );
 }

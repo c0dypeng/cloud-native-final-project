@@ -17,7 +17,7 @@ export async function login(
   const password = String(formData.get("password") ?? "");
 
   if (!username || !password) {
-    return { error: "請輸入帳號與密碼" };
+    return { error: "missing" };
   }
 
   let sessionId: string;
@@ -29,12 +29,12 @@ export async function login(
       cache: "no-store",
     });
     if (!res.ok) {
-      return { error: "帳號或密碼錯誤" };
+      return { error: "invalid" };
     }
     const data = (await res.json()) as { sessionId: string };
     sessionId = data.sessionId;
   } catch {
-    return { error: "無法連線到伺服器，請稍後再試" };
+    return { error: "serverUnavailable" };
   }
 
   const cookieStore = await cookies();

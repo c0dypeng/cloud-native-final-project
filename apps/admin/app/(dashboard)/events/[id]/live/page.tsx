@@ -3,20 +3,12 @@ import Link from "next/link";
 import { ArrowLeft, Radio } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { Badge } from "@workspace/ui/components/badge";
+import { getTranslations } from "next-intl/server";
 import { verifySession } from "@/lib/dal";
 import { apiAdminServer } from "@/lib/api-server";
 import { LiveCommandCenter } from "./live-command-center";
 
 export const dynamic = "force-dynamic";
-
-const EVENT_TYPE_LABEL: Record<string, string> = {
-  earthquake: "地震",
-  fire: "火災",
-  security: "資安事件",
-  accident: "意外",
-  drill: "演習",
-  other: "其他",
-};
 
 export default async function LivePage({
   params,
@@ -40,6 +32,9 @@ export default async function LivePage({
     notFound();
   }
   if (!event) notFound();
+  const tEvents = await getTranslations("events");
+  const tStatus = await getTranslations("status");
+  const tEventTypes = await getTranslations("eventTypes");
 
   return (
     <div className="space-y-4">
@@ -48,12 +43,12 @@ export default async function LivePage({
           <Button variant="ghost" size="sm" asChild className="-ml-2">
             <Link href={`/events/${id}`}>
               <ArrowLeft className="mr-1.5 h-4 w-4" aria-hidden />
-              返回事件詳情
+              {tEvents("backToDetail")}
             </Link>
           </Button>
           <span className="text-muted-foreground">·</span>
           <Badge variant={event.type === "drill" ? "outline" : "secondary"}>
-            {EVENT_TYPE_LABEL[event.type] ?? event.type}
+            {tEventTypes.has(event.type) ? tEventTypes(event.type) : event.type}
           </Badge>
           {event.status === "active" ? (
             <Badge
@@ -61,10 +56,10 @@ export default async function LivePage({
               className="animate-pulse [animation-duration:2s]"
             >
               <Radio className="h-3 w-3 mr-1" aria-hidden />
-              LIVE · 進行中
+              {tStatus("live")} · {tStatus("active")}
             </Badge>
           ) : (
-            <Badge variant="outline">已結束</Badge>
+            <Badge variant="outline">{tStatus("closed")}</Badge>
           )}
         </div>
       </div>

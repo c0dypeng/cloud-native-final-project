@@ -3,20 +3,12 @@ import { ArrowLeft, Radio } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@workspace/ui/components/button";
 import { Badge } from "@workspace/ui/components/badge";
+import { getTranslations } from "next-intl/server";
 import { verifySession } from "@/lib/dal";
 import { apiAdminServer } from "@/lib/api-server";
 import { EventDetailClient } from "./event-detail-client";
 
 export const dynamic = "force-dynamic";
-
-const EVENT_TYPE_LABEL: Record<string, string> = {
-  earthquake: "地震",
-  fire: "火災",
-  security: "資安事件",
-  accident: "意外",
-  drill: "演習",
-  other: "其他",
-};
 
 export default async function EventDetailPage({
   params,
@@ -41,6 +33,9 @@ export default async function EventDetailPage({
   }
 
   if (!event) notFound();
+  const t = await getTranslations("events");
+  const tStatus = await getTranslations("status");
+  const tEventTypes = await getTranslations("eventTypes");
 
   return (
     <div className="space-y-6">
@@ -48,19 +43,19 @@ export default async function EventDetailPage({
         <Button variant="ghost" size="sm" asChild className="-ml-2 mb-2">
           <Link href="/events">
             <ArrowLeft className="mr-1.5 h-4 w-4" aria-hidden />
-            返回事件列表
+            {t("backToList")}
           </Link>
         </Button>
         <header className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <div className="flex items-center gap-2 mb-1.5">
               <Badge variant={event.type === "drill" ? "outline" : "secondary"}>
-                {EVENT_TYPE_LABEL[event.type] ?? event.type}
+                {tEventTypes.has(event.type) ? tEventTypes(event.type) : event.type}
               </Badge>
               {event.status === "active" ? (
-                <Badge variant="destructive">進行中</Badge>
+                <Badge variant="destructive">{tStatus("active")}</Badge>
               ) : (
-                <Badge variant="outline">已結束</Badge>
+                <Badge variant="outline">{tStatus("closed")}</Badge>
               )}
             </div>
             <h1 className="text-2xl font-semibold tracking-tight">
@@ -76,7 +71,7 @@ export default async function EventDetailPage({
             <Button asChild variant="default">
               <Link href={`/events/${id}/live`}>
                 <Radio className="mr-1.5 h-4 w-4 animate-pulse [animation-duration:2s]" aria-hidden />
-                Live 指揮中心
+                {t("liveCommandCenter")}
               </Link>
             </Button>
           )}

@@ -1,4 +1,5 @@
 import { LogOut } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { Button } from "@workspace/ui/components/button";
 import {
   DropdownMenu,
@@ -15,6 +16,8 @@ import { verifySession } from "@/lib/dal";
 export async function UserNav() {
   const session = await verifySession();
   const username = session?.username ?? "admin";
+  const tRoles = await getTranslations("roles");
+  const tNav = await getTranslations("nav");
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -31,7 +34,7 @@ export async function UserNav() {
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium leading-none">{username}</p>
             <p className="text-xs leading-none text-muted-foreground">
-              管理員
+              {tRoles("admin")}
             </p>
           </div>
         </DropdownMenuLabel>
@@ -40,7 +43,7 @@ export async function UserNav() {
           <form action={logout}>
             <button type="submit" className="flex w-full items-center">
               <LogOut className="mr-2 h-4 w-4" />
-              <span>登出</span>
+              <span>{tNav("logout")}</span>
             </button>
           </form>
         </DropdownMenuItem>

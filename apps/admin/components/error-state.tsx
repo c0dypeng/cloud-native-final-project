@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { AlertCircle } from "lucide-react";
 import {
   Alert,
@@ -11,14 +12,15 @@ interface ErrorStateProps {
 }
 
 export function ErrorState({
-  title = "載入資料時發生錯誤",
-  message = "載入此頁面時發生錯誤，請稍後再試。",
+  title,
+  message,
 }: ErrorStateProps) {
+  const t = useTranslations("error");
   return (
     <Alert variant="destructive">
       <AlertCircle className="h-4 w-4" />
-      <AlertTitle>{title}</AlertTitle>
-      <AlertDescription>{message}</AlertDescription>
+      <AlertTitle>{title ?? t("loadTitle")}</AlertTitle>
+      <AlertDescription>{message ?? t("loadMessage")}</AlertDescription>
     </Alert>
   );
 }

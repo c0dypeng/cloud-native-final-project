@@ -11,6 +11,7 @@ import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
 import { verifySession } from "@/lib/dal";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { apiAdminServer } from "@/lib/api-server";
 import { formatDateTime } from "@/lib/format-date";
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
@@ -29,19 +30,21 @@ export default async function DashboardPage() {
   ]);
   const activeEvents = events.filter((e) => e.status === "active");
   const totalUsers = userPage.total;
+  const t = await getTranslations("dashboard");
+  const tStatus = await getTranslations("status");
 
   return (
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">後台概覽</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
           <p className="text-sm text-muted-foreground">
-            您好，{session.username}。即時掌握全公司的安全狀況。
+            {t("greeting", { username: session.username })}
           </p>
         </div>
         <Button asChild>
           <Link href="/events">
-            管理事件
+            {t("manageEvents")}
             <ArrowUpRight className="ml-1 h-4 w-4" aria-hidden />
           </Link>
         </Button>
@@ -49,22 +52,22 @@ export default async function DashboardPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard
-          title="進行中事件"
+          title={t("activeEvents")}
           value={activeEvents.length}
-          description="可同時進行多個事件"
+          description={t("activeEventsDescription")}
           icon={<AlertCircle className="h-4 w-4" aria-hidden />}
           accent={activeEvents.length > 0 ? "destructive" : "muted"}
         />
         <StatCard
-          title="累計事件"
+          title={t("totalEvents")}
           value={events.length}
-          description="包含已結束事件"
+          description={t("totalEventsDescription")}
           icon={<ShieldCheck className="h-4 w-4" aria-hidden />}
         />
         <StatCard
-          title="使用者數"
+          title={t("users")}
           value={totalUsers}
-          description="員工 + 主管"
+          description={t("usersDescription")}
           icon={<Users className="h-4 w-4" aria-hidden />}
         />
       </div>
@@ -73,19 +76,19 @@ export default async function DashboardPage() {
         <Card className="lg:col-span-2">
           <CardHeader className="flex flex-row items-start justify-between space-y-0">
             <div className="space-y-1">
-              <CardTitle>進行中事件</CardTitle>
+              <CardTitle>{t("activeEvents")}</CardTitle>
               <CardDescription>
-                點選事件查看回報狀態，或前往 Live 指揮中心。
+                {t("activeEventsCardDescription")}
               </CardDescription>
             </div>
             <Button variant="outline" size="sm" asChild>
-              <Link href="/events">全部事件</Link>
+              <Link href="/events">{t("allEvents")}</Link>
             </Button>
           </CardHeader>
           <CardContent>
             {activeEvents.length === 0 ? (
               <p className="text-sm text-muted-foreground py-8 text-center">
-                目前沒有進行中的事件。
+                {t("noActiveEvents")}
               </p>
             ) : (
               <ul className="divide-y rounded-lg border">
@@ -101,7 +104,7 @@ export default async function DashboardPage() {
                           {formatDateTime(e.createdAt)}
                         </p>
                       </div>
-                      <Badge variant="destructive">進行中</Badge>
+                      <Badge variant="destructive">{tStatus("active")}</Badge>
                     </Link>
                   </li>
                 ))}
@@ -111,8 +114,8 @@ export default async function DashboardPage() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>即時活動</CardTitle>
-            <CardDescription>SSE 推送的最新回報。</CardDescription>
+            <CardTitle>{t("activity")}</CardTitle>
+            <CardDescription>{t("activityDescription")}</CardDescription>
           </CardHeader>
           <CardContent>
             <ActivityFeed />

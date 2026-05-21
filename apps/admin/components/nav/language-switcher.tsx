@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Languages, Check } from "lucide-react";
 import {
   DropdownMenu,
@@ -14,6 +14,7 @@ import { setLocaleAction } from "@/i18n/actions";
 
 export function LanguageSwitcher() {
   const current = useLocale();
+  const t = useTranslations("common.languages");
   const [pending, startTransition] = useTransition();
   function pick(code: string) {
     startTransition(async () => {
@@ -43,7 +44,7 @@ export function LanguageSwitcher() {
           ) : (
             <span className="mr-2 inline-block w-3.5" />
           )}
-          繁體中文
+          {t("zh-TW")}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => pick("en")}>
           {current === "en" ? (
@@ -51,7 +52,7 @@ export function LanguageSwitcher() {
           ) : (
             <span className="mr-2 inline-block w-3.5" />
           )}
-          English
+          {t("en")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

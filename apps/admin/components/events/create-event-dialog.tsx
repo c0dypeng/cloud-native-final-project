@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -33,16 +34,19 @@ import {
 } from "@workspace/api-contracts";
 import { adminApi } from "@/lib/api-client";
 
-const TYPE_OPTIONS: Array<{ value: EventType; label: string }> = [
-  { value: "earthquake", label: "地震" },
-  { value: "fire", label: "火災" },
-  { value: "security", label: "資安事件" },
-  { value: "accident", label: "意外" },
-  { value: "drill", label: "演習 (非緊急)" },
-  { value: "other", label: "其他" },
+const TYPE_OPTIONS: EventType[] = [
+  "earthquake",
+  "fire",
+  "security",
+  "accident",
+  "drill",
+  "other",
 ];
 
 export function CreateEventDialog({ trigger }: { trigger: React.ReactNode }) {
+  const t = useTranslations("createEvent");
+  const tCommon = useTranslations("common");
+  const tEventTypes = useTranslations("eventTypes");
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -55,14 +59,14 @@ export function CreateEventDialog({ trigger }: { trigger: React.ReactNode }) {
     startTransition(async () => {
       try {
         const res = await adminApi.events.create(values);
-        toast.success("事件已建立，員工已收到通知");
+        toast.success(t("success"));
         setOpen(false);
         form.reset();
         router.push(`/events/${res.event.id}`);
         router.refresh();
       } catch (err) {
         const msg = (err as { message?: string }).message;
-        toast.error("建立失敗", { description: msg ?? "請稍後再試" });
+        toast.error(t("failure"), { description: msg ?? tCommon("retryLater") });
       }
     });
   }
@@ -72,17 +76,17 @@ export function CreateEventDialog({ trigger }: { trigger: React.ReactNode }) {
       <DialogTrigger render={trigger as React.ReactElement<Record<string, unknown>>} />
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>建立緊急事件</DialogTitle>
+          <DialogTitle>{t("title")}</DialogTitle>
           <DialogDescription>
-            建立後系統會立即推送通知，所有員工會看到回報按鈕。
+            {t("description")}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="title">事件名稱 *</Label>
+            <Label htmlFor="title">{t("name")}</Label>
             <Input
               id="title"
-              placeholder="例如：2026 花蓮地震"
+              placeholder={t("namePlaceholder")}
               {...form.register("title")}
               disabled={pending}
             />
@@ -94,18 +98,18 @@ export function CreateEventDialog({ trigger }: { trigger: React.ReactNode }) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="type">類型 *</Label>
+            <Label htmlFor="type">{t("type")}</Label>
             <Select
               value={form.watch("type")}
               onValueChange={(v) => form.setValue("type", v as EventType)}
             >
               <SelectTrigger id="type" disabled={pending}>
-                <SelectValue placeholder="選擇類型" />
+                <SelectValue placeholder={t("typePlaceholder")} />
               </SelectTrigger>
               <SelectContent>
-                {TYPE_OPTIONS.map((o) => (
-                  <SelectItem key={o.value} value={o.value}>
-                    {o.label}
+                {TYPE_OPTIONS.map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {type === "drill" ? tEventTypes("drillNonEmergency") : tEventTypes(type)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -113,11 +117,11 @@ export function CreateEventDialog({ trigger }: { trigger: React.ReactNode }) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">詳細說明（選填）</Label>
+            <Label htmlFor="description">{t("details")}</Label>
             <Textarea
               id="description"
               rows={3}
-              placeholder="提供更多事件背景，例如地點、影響範圍"
+              placeholder={t("detailsPlaceholder")}
               {...form.register("description")}
               disabled={pending}
             />
@@ -130,10 +134,10 @@ export function CreateEventDialog({ trigger }: { trigger: React.ReactNode }) {
               onClick={() => setOpen(false)}
               disabled={pending}
             >
-              取消
+              {tCommon("cancel")}
             </Button>
-            <Button type="submit" loading={pending} loadingText="建立中…">
-              建立並推送
+            <Button type="submit" loading={pending} loadingText={t("submitting")}>
+              {t("submit")}
             </Button>
           </DialogFooter>
         </form>

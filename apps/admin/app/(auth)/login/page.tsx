@@ -67,7 +67,7 @@ export default function LoginPage() {
 
             {state?.error && (
               <Alert variant="destructive">
-                <AlertDescription>{state.error}</AlertDescription>
+                <AlertDescription>{t(state.error)}</AlertDescription>
               </Alert>
             )}
 

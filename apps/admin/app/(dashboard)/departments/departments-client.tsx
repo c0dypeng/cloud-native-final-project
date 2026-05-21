@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Plus, Trash2, Pencil, ChevronRight, Building } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -51,6 +52,7 @@ function flattenForSelect(nodes: DeptTreeNode[], depth = 0): Array<{ id: string;
 }
 
 export function DepartmentsClient({ initialTree }: Props) {
+  const t = useTranslations("departments");
   const router = useRouter();
   const flat = flattenForSelect(initialTree);
 
@@ -62,7 +64,7 @@ export function DepartmentsClient({ initialTree }: Props) {
       <div className="rounded-lg border bg-card p-3 space-y-1">
         {initialTree.length === 0 ? (
           <p className="text-sm text-muted-foreground py-8 text-center">
-            尚無部門。
+            {t("empty")}
           </p>
         ) : (
           initialTree.map((node) => (
@@ -90,6 +92,7 @@ function DeptNode({
   onChanged: () => void;
   depth?: number;
 }) {
+  const t = useTranslations("departments");
   const [open, setOpen] = useState(true);
   const hasChildren = node.children.length > 0;
   return (
@@ -103,7 +106,7 @@ function DeptNode({
             type="button"
             onClick={() => setOpen(!open)}
             className="p-0.5 -ml-1 rounded text-muted-foreground hover:text-foreground"
-            aria-label={open ? "收合" : "展開"}
+            aria-label={open ? t("collapse") : t("expand")}
           >
             <ChevronRight
               className={cn(
@@ -119,7 +122,7 @@ function DeptNode({
         <Building className="h-4 w-4 text-muted-foreground" aria-hidden />
         <span className="font-medium">{node.name}</span>
         <Badge variant="secondary" className="text-xs">
-          {node.userCount} 人
+          {t("userCount", { count: node.userCount })}
         </Badge>
         <div className="ml-auto flex opacity-0 group-hover:opacity-100 transition-opacity">
           <EditDeptDialog dept={node} flat={flat} onDone={onChanged} />
@@ -150,6 +153,8 @@ function CreateDeptDialog({
   flat: Array<{ id: string; name: string; depth: number }>;
   onDone: () => void;
 }) {
+  const t = useTranslations("departments");
+  const tCommon = useTranslations("common");
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
 
@@ -163,11 +168,11 @@ function CreateDeptDialog({
         name: String(fd.get("name") ?? ""),
         parentId: parentId || null,
       });
-      toast.success("已建立部門");
+      toast.success(t("created"));
       setOpen(false);
       onDone();
     } catch (err) {
-      toast.error("建立失敗", {
+      toast.error(t("createFailure"), {
         description: (err as { message?: string }).message,
       });
     } finally {
@@ -181,24 +186,24 @@ function CreateDeptDialog({
         render={
           <Button>
             <Plus className="mr-1.5 h-4 w-4" aria-hidden />
-            新增部門
+            {t("create")}
           </Button>
         }
       />
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>新增部門</DialogTitle>
+          <DialogTitle>{t("createTitle")}</DialogTitle>
         </DialogHeader>
         <form onSubmit={onSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">部門名稱</Label>
+            <Label htmlFor="name">{t("name")}</Label>
             <Input id="name" name="name" required disabled={pending} />
           </div>
           <div className="space-y-2">
-            <Label>上層部門</Label>
+            <Label>{t("parent")}</Label>
             <Select name="parentId">
               <SelectTrigger>
-                <SelectValue placeholder="頂層部門" />
+                <SelectValue placeholder={t("root")} />
               </SelectTrigger>
               <SelectContent>
                 {flat.map((d) => (
@@ -216,10 +221,10 @@ function CreateDeptDialog({
               onClick={() => setOpen(false)}
               disabled={pending}
             >
-              取消
+              {tCommon("cancel")}
             </Button>
             <Button type="submit" loading={pending}>
-              建立
+              {tCommon("create")}
             </Button>
           </DialogFooter>
         </form>
@@ -237,6 +242,8 @@ function EditDeptDialog({
   flat: Array<{ id: string; name: string; depth: number }>;
   onDone: () => void;
 }) {
+  const t = useTranslations("departments");
+  const tCommon = useTranslations("common");
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
 
@@ -250,11 +257,11 @@ function EditDeptDialog({
         name: String(fd.get("name") ?? ""),
         parentId: parentId || null,
       });
-      toast.success("已更新");
+      toast.success(t("updated"));
       setOpen(false);
       onDone();
     } catch (err) {
-      toast.error("更新失敗", {
+      toast.error(t("updateFailure"), {
         description: (err as { message?: string }).message,
       });
     } finally {
@@ -266,18 +273,18 @@ function EditDeptDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
         render={
-          <Button variant="ghost" size="sm" aria-label="編輯">
+          <Button variant="ghost" size="sm" aria-label={t("edit")}>
             <Pencil className="h-3.5 w-3.5" aria-hidden />
           </Button>
         }
       />
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>編輯部門：{dept.name}</DialogTitle>
+          <DialogTitle>{t("editTitle", { name: dept.name })}</DialogTitle>
         </DialogHeader>
         <form onSubmit={onSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">部門名稱</Label>
+            <Label htmlFor="name">{t("name")}</Label>
             <Input
               id="name"
               name="name"
@@ -287,10 +294,10 @@ function EditDeptDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label>上層部門</Label>
+            <Label>{t("parent")}</Label>
             <Select name="parentId" defaultValue={dept.parentId ?? ""}>
               <SelectTrigger>
-                <SelectValue placeholder="頂層部門" />
+                <SelectValue placeholder={t("root")} />
               </SelectTrigger>
               <SelectContent>
                 {flat
@@ -310,10 +317,10 @@ function EditDeptDialog({
               onClick={() => setOpen(false)}
               disabled={pending}
             >
-              取消
+              {tCommon("cancel")}
             </Button>
             <Button type="submit" loading={pending}>
-              儲存
+              {tCommon("save")}
             </Button>
           </DialogFooter>
         </form>
@@ -329,13 +336,15 @@ function DeleteDeptButton({
   dept: DeptTreeNode;
   onDone: () => void;
 }) {
+  const t = useTranslations("departments");
+  const tCommon = useTranslations("common");
   async function handle() {
     try {
       await adminApi.departments.remove(dept.id);
-      toast.success("已刪除");
+      toast.success(t("deleted"));
       onDone();
     } catch (err) {
-      toast.error("刪除失敗", {
+      toast.error(t("deleteFailure"), {
         description: (err as { message?: string }).message,
       });
     }
@@ -344,21 +353,21 @@ function DeleteDeptButton({
     <AlertDialog>
       <AlertDialogTrigger
         render={
-          <Button variant="ghost" size="sm" aria-label="刪除">
+          <Button variant="ghost" size="sm" aria-label={t("delete")}>
             <Trash2 className="h-3.5 w-3.5 text-destructive" aria-hidden />
           </Button>
         }
       />
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>刪除「{dept.name}」？</AlertDialogTitle>
+          <AlertDialogTitle>{t("deleteTitle", { name: dept.name })}</AlertDialogTitle>
           <AlertDialogDescription>
-            僅能刪除沒有員工且沒有下屬部門的部門。
+            {t("deleteDescription")}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>取消</AlertDialogCancel>
-          <AlertDialogAction onClick={handle}>刪除</AlertDialogAction>
+          <AlertDialogCancel>{tCommon("cancel")}</AlertDialogCancel>
+          <AlertDialogAction onClick={handle}>{tCommon("delete")}</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

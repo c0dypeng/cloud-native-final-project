@@ -19,20 +19,12 @@ import {
 } from "@workspace/ui/components/table";
 import { verifySession } from "@/lib/dal";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { apiAdminServer } from "@/lib/api-server";
 import { formatDateTime } from "@/lib/format-date";
 import { CreateEventDialog } from "@/components/events/create-event-dialog";
 
 export const dynamic = "force-dynamic";
-
-const EVENT_TYPE_LABEL: Record<string, string> = {
-  earthquake: "地震",
-  fire: "火災",
-  security: "資安",
-  accident: "意外",
-  drill: "演習",
-  other: "其他",
-};
 
 export default async function EventsPage() {
   const session = await verifySession();
@@ -40,21 +32,25 @@ export default async function EventsPage() {
 
   const { events } = await apiAdminServer.events.list();
   const sorted = [...events].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const t = await getTranslations("events");
+  const tCommon = await getTranslations("common");
+  const tStatus = await getTranslations("status");
+  const tEventTypes = await getTranslations("eventTypes");
 
   return (
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">事件管理</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
           <p className="text-sm text-muted-foreground">
-            建立緊急事件後，員工會立即收到通知並可回報安全狀態。
+            {t("description")}
           </p>
         </div>
         <CreateEventDialog
           trigger={
             <Button>
               <Plus className="mr-1.5 h-4 w-4" aria-hidden />
-              建立事件
+              {t("create")}
             </Button>
           }
         />
@@ -62,26 +58,26 @@ export default async function EventsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>事件列表</CardTitle>
-          <CardDescription>共 {events.length} 筆</CardDescription>
+          <CardTitle>{t("list")}</CardTitle>
+          <CardDescription>{tCommon("count", { count: events.length })}</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
           {events.length === 0 ? (
             <div className="px-6 py-12 text-center">
               <AlertCircle className="mx-auto h-8 w-8 text-muted-foreground" aria-hidden />
               <p className="mt-3 text-sm text-muted-foreground">
-                尚未建立過任何事件。
+                {t("empty")}
               </p>
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>事件名稱</TableHead>
-                  <TableHead className="hidden sm:table-cell">類型</TableHead>
-                  <TableHead>狀態</TableHead>
-                  <TableHead className="hidden md:table-cell">建立時間</TableHead>
-                  <TableHead className="hidden md:table-cell">結束時間</TableHead>
+                  <TableHead>{t("name")}</TableHead>
+                  <TableHead className="hidden sm:table-cell">{t("type")}</TableHead>
+                  <TableHead>{t("status")}</TableHead>
+                  <TableHead className="hidden md:table-cell">{t("createdAt")}</TableHead>
+                  <TableHead className="hidden md:table-cell">{t("closedAt")}</TableHead>
                   <TableHead className="w-[80px]"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -97,14 +93,14 @@ export default async function EventsPage() {
                       <Badge
                         variant={e.type === "drill" ? "outline" : "secondary"}
                       >
-                        {EVENT_TYPE_LABEL[e.type] ?? e.type}
+                        {tEventTypes.has(e.type) ? tEventTypes(e.type) : e.type}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       {e.status === "active" ? (
-                        <Badge variant="destructive">進行中</Badge>
+                        <Badge variant="destructive">{tStatus("active")}</Badge>
                       ) : (
-                        <Badge variant="outline">已結束</Badge>
+                        <Badge variant="outline">{tStatus("closed")}</Badge>
                       )}
                     </TableCell>
                     <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
@@ -115,7 +111,7 @@ export default async function EventsPage() {
                     </TableCell>
                     <TableCell>
                       <Button variant="ghost" size="sm" asChild>
-                        <Link href={`/events/${e.id}`}>查看</Link>
+                        <Link href={`/events/${e.id}`}>{tCommon("view")}</Link>
                       </Button>
                     </TableCell>
                   </TableRow>

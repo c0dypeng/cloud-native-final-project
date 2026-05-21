@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import {
   AlertTriangle,
   Bell,
@@ -64,6 +65,8 @@ export function LiveCommandCenter({
   initialStats,
   initialUnreported,
 }: Props) {
+  const t = useTranslations("live");
+  const tCommon = useTranslations("common");
   const [stats, setStats] = useState<StatsResponse>(initialStats);
   const [unreported, setUnreported] = useState<UnreportedUser[]>(
     initialUnreported.users,
@@ -95,7 +98,7 @@ export function LiveCommandCenter({
     onEvent: (e: SseEvent) => {
       const now = new Date().toISOString();
       if (e.type === "report_submitted" && e.eventId === eventId) {
-        const verb = e.status === "safe" ? "回報「我安全」" : "回報「需要協助」";
+        const verb = e.status === "safe" ? t("activitySafe") : t("activityNeedHelp");
         const item: ActivityItem = {
           id: `${e.timestamp}-${e.userId}`,
           kind: e.status,
@@ -112,7 +115,7 @@ export function LiveCommandCenter({
         const item: ActivityItem = {
           id: `nh-${e.userId}-${e.timestamp}`,
           kind: "need_help",
-          text: `🚨 ${e.userName} 需要協助`,
+          text: t("activityNeedHelpNamed", { name: e.userName }),
           detail: e.message ?? undefined,
           user: e.departmentName ?? undefined,
           at: e.timestamp,
@@ -124,7 +127,7 @@ export function LiveCommandCenter({
         const item: ActivityItem = {
           id: `r-${e.timestamp}`,
           kind: "reminder",
-          text: "已發送提醒給未回報員工",
+          text: t("reminderSent"),
           at: e.timestamp,
         };
         setFeed((prev) => [item, ...prev].slice(0, ACTIVITY_MAX));
@@ -134,7 +137,7 @@ export function LiveCommandCenter({
         const item: ActivityItem = {
           id: `x-${e.timestamp}`,
           kind: "event",
-          text: "事件已結束",
+          text: t("eventClosed"),
           at: e.timestamp,
         };
         setFeed((prev) => [item, ...prev].slice(0, ACTIVITY_MAX));
@@ -156,11 +159,11 @@ export function LiveCommandCenter({
     startReminding(async () => {
       try {
         const res = await adminApi.events.remind(eventId);
-        toast.success(`已觸發提醒 (${res.unreported} 人未回報)`);
+        toast.success(t("remindSuccess", { count: res.unreported }));
         refreshAggregates();
       } catch (err) {
-        toast.error("觸發失敗", {
-          description: (err as { message?: string }).message ?? "請稍後再試",
+        toast.error(t("remindFailure"), {
+          description: (err as { message?: string }).message ?? tCommon("retryLater"),
         });
       }
     });
@@ -181,7 +184,7 @@ export function LiveCommandCenter({
           <div className="flex items-center gap-2">
             <ConnBadge status={status} />
             <span className="text-xs text-muted-foreground hidden sm:inline">
-              即時連線到 /api/sse
+              {t("connectionHint")}
             </span>
           </div>
           <Button
@@ -190,10 +193,10 @@ export function LiveCommandCenter({
             onClick={handleRemindNow}
             disabled={!eventActive || reminding}
             loading={reminding}
-            loadingText="觸發中…"
+            loadingText={t("reminding")}
           >
             <Bell className="mr-1.5 h-4 w-4" aria-hidden />
-            立即發送提醒
+            {t("remindNow")}
           </Button>
         </div>
 
@@ -201,20 +204,20 @@ export function LiveCommandCenter({
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <MetricTile
             icon={<Users className="h-5 w-5" aria-hidden />}
-            label="總員工"
+            label={t("totalUsers")}
             value={overall.total}
             tone="muted"
           />
           <MetricTile
             icon={<CheckCircle2 className="h-5 w-5" aria-hidden />}
-            label="已安全"
+            label={t("safe")}
             value={overall.safe}
             tone="success"
             pulse={pulse.safe}
           />
           <MetricTile
             icon={<AlertTriangle className="h-5 w-5" aria-hidden />}
-            label="需要協助"
+            label={t("needHelp")}
             value={overall.needHelp}
             tone="destructive"
             pulse={pulse.needHelp}
@@ -222,7 +225,7 @@ export function LiveCommandCenter({
           />
           <MetricTile
             icon={<CircleHelp className="h-5 w-5" aria-hidden />}
-            label="未回報"
+            label={t("notReported")}
             value={overall.notReported}
             tone="warning"
           />
@@ -232,10 +235,13 @@ export function LiveCommandCenter({
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium">
-              回報進度 — {reportedPct}%
+              {t("progressTitle", { percent: reportedPct })}
             </CardTitle>
             <CardDescription>
-              {overall.safe + overall.needHelp} / {overall.total} 已回報
+              {t("progressDescription", {
+                reported: overall.safe + overall.needHelp,
+                total: overall.total,
+              })}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -265,8 +271,8 @@ export function LiveCommandCenter({
         {/* Department breakdown */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">依部門</CardTitle>
-            <CardDescription>各部門的回報進度</CardDescription>
+            <CardTitle className="text-base">{t("byDepartment")}</CardTitle>
+            <CardDescription>{t("byDepartmentDescription")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
             {stats.byDepartment.length === 0 ? (
@@ -285,7 +291,7 @@ export function LiveCommandCenter({
                         {reported}/{d.total} ·{" "}
                         {d.needHelp > 0 && (
                           <span className="text-destructive font-medium">
-                            {d.needHelp} 求助 ·{" "}
+                            {t("helpCount", { count: d.needHelp })} ·{" "}
                           </span>
                         )}
                         {Math.round(pct)}%
@@ -317,9 +323,9 @@ export function LiveCommandCenter({
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <Activity className="h-4 w-4" aria-hidden />
-              即時活動
+              {t("activity")}
             </CardTitle>
-            <CardDescription>最近 {ACTIVITY_MAX} 筆事件</CardDescription>
+            <CardDescription>{t("activityDescription", { count: ACTIVITY_MAX })}</CardDescription>
           </CardHeader>
           <CardContent className="p-0">
             <div
@@ -328,7 +334,7 @@ export function LiveCommandCenter({
             >
               {feed.length === 0 ? (
                 <p className="py-12 text-center text-sm text-muted-foreground">
-                  等待員工回報…
+                  {t("waiting")}
                 </p>
               ) : (
                 <ul className="space-y-2">
@@ -345,13 +351,13 @@ export function LiveCommandCenter({
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <CircleHelp className="h-4 w-4 text-warning" aria-hidden />
-              未回報名單 ({unreported.length})
+              {t("unreportedTitle", { count: unreported.length })}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             {unreported.length === 0 ? (
               <p className="px-4 pb-6 text-sm text-success text-center">
-                所有員工皆已回報 ✓
+                {t("allReported")}
               </p>
             ) : (
               <ul className="max-h-[280px] overflow-auto divide-y">
@@ -363,7 +369,7 @@ export function LiveCommandCenter({
                     <div className="min-w-0 flex-1">
                       <p className="font-medium truncate">{u.name}</p>
                       <p className="text-xs text-muted-foreground truncate">
-                        {u.departmentName ?? "—"}
+                        {u.departmentName ?? tCommon("none")}
                       </p>
                     </div>
                     <div className="flex gap-1">
@@ -384,7 +390,7 @@ export function LiveCommandCenter({
                 ))}
                 {unreported.length > 30 && (
                   <li className="px-4 py-2 text-xs text-muted-foreground text-center">
-                    另有 {unreported.length - 30} 人
+                    {t("morePeople", { count: unreported.length - 30 })}
                   </li>
                 )}
               </ul>
@@ -486,6 +492,7 @@ function ConnBadge({
 }: {
   status: "connecting" | "open" | "closed" | "error";
 }) {
+  const tStatus = useTranslations("status");
   const live = status === "open";
   return (
     <Badge
@@ -500,7 +507,7 @@ function ConnBadge({
       ) : (
         <WifiOff className="h-3 w-3" aria-hidden />
       )}
-      {live ? "LIVE" : "重新連線中"}
+      {live ? tStatus("live") : tStatus("reconnecting")}
     </Badge>
   );
 }

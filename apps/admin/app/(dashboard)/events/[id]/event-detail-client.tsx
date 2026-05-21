@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   CheckCircle2,
   AlertTriangle,
@@ -74,6 +75,8 @@ export function EventDetailClient({
   initialStats,
   initialReports,
 }: Props) {
+  const t = useTranslations("eventDetail");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const [stats, setStats] = useState<StatsResponse>(initialStats);
   const [reports, setReports] = useState<ReportWithUser[]>(initialReports);
@@ -107,11 +110,11 @@ export function EventDetailClient({
     startClose(async () => {
       try {
         await adminApi.events.close(eventId);
-        toast.success("事件已結束");
+        toast.success(t("closedToast"));
         router.refresh();
       } catch (err) {
         const msg = (err as { message?: string }).message;
-        toast.error("無法結束事件", { description: msg ?? "請稍後再試" });
+        toast.error(t("closeFailure"), { description: msg ?? tCommon("retryLater") });
       }
     });
   }
@@ -133,24 +136,24 @@ export function EventDetailClient({
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <SummaryTile
-          label="總員工數"
+          label={t("totalUsers")}
           value={stats.overall.total}
           icon={<Users className="h-4 w-4 text-muted-foreground" aria-hidden />}
         />
         <SummaryTile
-          label="已安全"
+          label={t("safe")}
           value={stats.overall.safe}
           tone="success"
           icon={<CheckCircle2 className="h-4 w-4" aria-hidden />}
         />
         <SummaryTile
-          label="需協助"
+          label={t("needHelp")}
           value={stats.overall.needHelp}
           tone="destructive"
           icon={<AlertTriangle className="h-4 w-4" aria-hidden />}
         />
         <SummaryTile
-          label="未回報"
+          label={t("notReported")}
           value={stats.overall.notReported}
           tone="muted"
           icon={<CircleHelp className="h-4 w-4" aria-hidden />}
@@ -160,18 +163,18 @@ export function EventDetailClient({
       {stats.byDepartment.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">依部門統計</CardTitle>
+            <CardTitle className="text-base">{t("byDepartment")}</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>部門</TableHead>
-                  <TableHead className="text-right">已安全</TableHead>
-                  <TableHead className="text-right">需協助</TableHead>
-                  <TableHead className="text-right">未回報</TableHead>
-                  <TableHead className="text-right">總人數</TableHead>
-                  <TableHead>進度</TableHead>
+                  <TableHead>{t("department")}</TableHead>
+                  <TableHead className="text-right">{t("safe")}</TableHead>
+                  <TableHead className="text-right">{t("needHelp")}</TableHead>
+                  <TableHead className="text-right">{t("notReported")}</TableHead>
+                  <TableHead className="text-right">{t("total")}</TableHead>
+                  <TableHead>{t("progress")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -221,15 +224,15 @@ export function EventDetailClient({
         <CardHeader>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <CardTitle className="text-base">回報明細</CardTitle>
+              <CardTitle className="text-base">{t("reports")}</CardTitle>
               <CardDescription>
-                共 {reports.length} 筆。即時更新。
+                {t("reportsDescription", { count: reports.length })}
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
               <Input
                 type="search"
-                placeholder="搜尋姓名、信箱、部門…"
+                placeholder={t("searchPlaceholder")}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 className="max-w-xs h-9"
@@ -240,21 +243,21 @@ export function EventDetailClient({
                     render={
                       <Button variant="outline" size="sm" disabled={closing}>
                         <XCircle className="mr-1.5 h-4 w-4" aria-hidden />
-                        結束事件
+                        {t("closeEvent")}
                       </Button>
                     }
                   />
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>確定結束「{eventTitle}」？</AlertDialogTitle>
+                      <AlertDialogTitle>{t("closeTitle", { title: eventTitle })}</AlertDialogTitle>
                       <AlertDialogDescription>
-                        結束後員工將無法再回報，但歷史紀錄會保留。此動作無法復原。
+                        {t("closeDescription")}
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>取消</AlertDialogCancel>
+                      <AlertDialogCancel>{tCommon("cancel")}</AlertDialogCancel>
                       <AlertDialogAction onClick={handleClose}>
-                        確定結束
+                        {t("confirmClose")}
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
@@ -267,28 +270,28 @@ export function EventDetailClient({
           <div className="px-6">
             <Tabs value={filter} onValueChange={(v) => setFilter(v as Filter)}>
               <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="all">全部</TabsTrigger>
-                <TabsTrigger value="safe">安全</TabsTrigger>
-                <TabsTrigger value="need_help">需協助</TabsTrigger>
-                <TabsTrigger value="not_reported">未回報</TabsTrigger>
+                <TabsTrigger value="all">{t("tabs.all")}</TabsTrigger>
+                <TabsTrigger value="safe">{t("tabs.safe")}</TabsTrigger>
+                <TabsTrigger value="need_help">{t("tabs.needHelp")}</TabsTrigger>
+                <TabsTrigger value="not_reported">{t("tabs.notReported")}</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>狀態</TableHead>
-                <TableHead>姓名</TableHead>
-                <TableHead className="hidden md:table-cell">部門</TableHead>
-                <TableHead className="hidden md:table-cell">回報時間</TableHead>
-                <TableHead>聯絡</TableHead>
+                <TableHead>{t("columns.status")}</TableHead>
+                <TableHead>{t("columns.name")}</TableHead>
+                <TableHead className="hidden md:table-cell">{t("columns.department")}</TableHead>
+                <TableHead className="hidden md:table-cell">{t("columns.reportedAt")}</TableHead>
+                <TableHead>{t("columns.contact")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center py-12 text-muted-foreground">
-                    沒有符合條件的回報
+                    {t("empty")}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -316,10 +319,10 @@ export function EventDetailClient({
                       </div>
                     </TableCell>
                     <TableCell className="hidden md:table-cell text-sm">
-                      {r.user.departmentName ?? "—"}
+                      {r.user.departmentName ?? tCommon("none")}
                     </TableCell>
                     <TableCell className="hidden md:table-cell text-xs text-muted-foreground">
-                      {r.reportedAt ? formatDateTime(r.reportedAt) : "尚未回報"}
+                      {r.reportedAt ? formatDateTime(r.reportedAt) : t("notReportedYet")}
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
@@ -327,7 +330,7 @@ export function EventDetailClient({
                           <Button variant="ghost" size="sm" asChild>
                             <a
                               href={`tel:${r.user.phone}`}
-                              aria-label={`撥打 ${r.user.name}`}
+                              aria-label={t("callUser", { name: r.user.name })}
                             >
                               <Phone className="h-3.5 w-3.5" aria-hidden />
                             </a>
@@ -336,7 +339,7 @@ export function EventDetailClient({
                         <Button variant="ghost" size="sm" asChild>
                           <a
                             href={`mailto:${r.user.email}`}
-                            aria-label={`寄信給 ${r.user.name}`}
+                            aria-label={t("emailUser", { name: r.user.name })}
                           >
                             <Mail className="h-3.5 w-3.5" aria-hidden />
                           </a>
@@ -398,17 +401,20 @@ function StatusBadge({
 }: {
   status: "safe" | "need_help" | "not_reported";
 }) {
+  const tStatus = useTranslations("status");
   if (status === "safe") {
     return (
-      <Badge className="bg-success/15 text-success border-success/20">安全</Badge>
+      <Badge className="bg-success/15 text-success border-success/20">
+        {tStatus("safe")}
+      </Badge>
     );
   }
   if (status === "need_help") {
     return (
       <Badge className="bg-destructive/15 text-destructive border-destructive/20">
-        需協助
+        {tStatus("needHelp")}
       </Badge>
     );
   }
-  return <Badge variant="outline">未回報</Badge>;
+  return <Badge variant="outline">{tStatus("notReported")}</Badge>;
 }

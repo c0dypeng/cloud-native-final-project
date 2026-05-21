@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   Plus,
   KeyRound,
@@ -57,9 +58,11 @@ interface Props {
   departments: Department[];
 }
 
-const ROLE_LABEL: Record<string, string> = { employee: "員工", manager: "主管" };
-
 export function UsersClientPage({ initialUsers, departments }: Props) {
+  const t = useTranslations("users");
+  const tCommon = useTranslations("common");
+  const tRoles = useTranslations("roles");
+  const tStatus = useTranslations("status");
   const router = useRouter();
   const [users] = useState<UserAdminView[]>(initialUsers);
   const [query, setQuery] = useState("");
@@ -80,7 +83,7 @@ export function UsersClientPage({ initialUsers, departments }: Props) {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <Input
           type="search"
-          placeholder="搜尋姓名、信箱、部門…"
+          placeholder={t("searchPlaceholder")}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="max-w-xs h-9"
@@ -96,12 +99,12 @@ export function UsersClientPage({ initialUsers, departments }: Props) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>姓名</TableHead>
-              <TableHead className="hidden md:table-cell">信箱</TableHead>
-              <TableHead>角色</TableHead>
-              <TableHead className="hidden lg:table-cell">部門</TableHead>
-              <TableHead className="hidden lg:table-cell">主管</TableHead>
-              <TableHead>狀態</TableHead>
+              <TableHead>{t("columns.name")}</TableHead>
+              <TableHead className="hidden md:table-cell">{t("columns.email")}</TableHead>
+              <TableHead>{t("columns.role")}</TableHead>
+              <TableHead className="hidden lg:table-cell">{t("columns.department")}</TableHead>
+              <TableHead className="hidden lg:table-cell">{t("columns.manager")}</TableHead>
+              <TableHead>{t("columns.status")}</TableHead>
               <TableHead className="w-[60px]"></TableHead>
             </TableRow>
           </TableHeader>
@@ -109,7 +112,7 @@ export function UsersClientPage({ initialUsers, departments }: Props) {
             {filtered.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
-                  沒有符合條件的使用者
+                  {t("empty")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -128,22 +131,22 @@ export function UsersClientPage({ initialUsers, departments }: Props) {
                   </TableCell>
                   <TableCell>
                     <Badge variant={u.role === "manager" ? "default" : "secondary"}>
-                      {ROLE_LABEL[u.role]}
+                      {tRoles(u.role)}
                     </Badge>
                   </TableCell>
                   <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
-                    {u.departmentName ?? "—"}
+                    {u.departmentName ?? tCommon("none")}
                   </TableCell>
                   <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
-                    {u.managerName ?? "—"}
+                    {u.managerName ?? tCommon("none")}
                   </TableCell>
                   <TableCell>
                     {u.isActive ? (
                       <Badge className="bg-success/15 text-success border-success/20">
-                        啟用
+                        {tStatus("enabled")}
                       </Badge>
                     ) : (
-                      <Badge variant="outline">停用</Badge>
+                      <Badge variant="outline">{tStatus("disabled")}</Badge>
                     )}
                   </TableCell>
                   <TableCell>
@@ -170,6 +173,8 @@ function UserRowActions({
   users: UserAdminView[];
   onChange: () => void;
 }) {
+  const t = useTranslations("users");
+  const tCommon = useTranslations("common");
   const [editOpen, setEditOpen] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
 
@@ -178,7 +183,7 @@ function UserRowActions({
       <DropdownMenu>
         <DropdownMenuTrigger
           render={
-            <Button variant="ghost" size="sm" aria-label="動作">
+            <Button variant="ghost" size="sm" aria-label={tCommon("actions")}>
               <MoreVertical className="h-4 w-4" aria-hidden />
             </Button>
           }
@@ -186,11 +191,11 @@ function UserRowActions({
         <DropdownMenuContent align="end">
           <DropdownMenuItem onClick={() => setEditOpen(true)}>
             <Pencil className="mr-2 h-3.5 w-3.5" aria-hidden />
-            編輯資料
+            {t("edit")}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setResetOpen(true)}>
             <KeyRound className="mr-2 h-3.5 w-3.5" aria-hidden />
-            重設密碼
+            {t("resetPassword")}
           </DropdownMenuItem>
           {user.isActive && (
             <DropdownMenuItem
@@ -198,17 +203,17 @@ function UserRowActions({
               onClick={async () => {
                 try {
                   await adminApi.users.softDelete(user.id);
-                  toast.success("使用者已停用");
+                  toast.success(t("disabled"));
                   onChange();
                 } catch (err) {
-                  toast.error("停用失敗", {
+                  toast.error(t("disableFailure"), {
                     description: (err as { message?: string }).message,
                   });
                 }
               }}
             >
               <UserX className="mr-2 h-3.5 w-3.5" aria-hidden />
-              停用帳號
+              {t("disableAccount")}
             </DropdownMenuItem>
           )}
         </DropdownMenuContent>
@@ -244,6 +249,9 @@ function CreateUserDialog({
   users: UserAdminView[];
   onCreated: () => void;
 }) {
+  const t = useTranslations("users");
+  const tCommon = useTranslations("common");
+  const tRoles = useTranslations("roles");
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
 
@@ -263,11 +271,11 @@ function CreateUserDialog({
     };
     try {
       await adminApi.users.create(body);
-      toast.success("使用者已建立");
+      toast.success(t("created"));
       setOpen(false);
       onCreated();
     } catch (err) {
-      toast.error("建立失敗", {
+      toast.error(t("createFailure"), {
         description: (err as { message?: string }).message,
       });
     } finally {
@@ -281,55 +289,55 @@ function CreateUserDialog({
         render={
           <Button>
             <Plus className="mr-1.5 h-4 w-4" aria-hidden />
-            新增使用者
+            {t("create")}
           </Button>
         }
       />
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>新增使用者</DialogTitle>
+          <DialogTitle>{t("create")}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <FieldRow label="姓名" name="name" required disabled={pending} />
+          <FieldRow label={t("fields.name")} name="name" required disabled={pending} />
           <FieldRow
-            label="電子郵件"
+            label={t("fields.email")}
             name="email"
             type="email"
             required
             disabled={pending}
           />
           <FieldRow
-            label="初始密碼"
+            label={t("fields.password")}
             name="password"
             type="password"
             required
-            placeholder="至少 8 個字元"
+            placeholder={t("passwordPlaceholder")}
             disabled={pending}
           />
           <FieldRow
-            label="電話"
+            label={t("fields.phone")}
             name="phone"
-            placeholder="(選填) 0911-000-000"
+            placeholder={t("phonePlaceholder")}
             disabled={pending}
           />
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label>角色</Label>
+              <Label>{t("fields.role")}</Label>
               <Select name="role" defaultValue="employee">
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="employee">員工</SelectItem>
-                  <SelectItem value="manager">主管</SelectItem>
+                  <SelectItem value="employee">{tRoles("employee")}</SelectItem>
+                  <SelectItem value="manager">{tRoles("manager")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>部門</Label>
+              <Label>{t("fields.department")}</Label>
               <Select name="departmentId">
                 <SelectTrigger>
-                  <SelectValue placeholder="未指定" />
+                  <SelectValue placeholder={tCommon("notSpecified")} />
                 </SelectTrigger>
                 <SelectContent>
                   {departments.map((d) => (
@@ -342,17 +350,17 @@ function CreateUserDialog({
             </div>
           </div>
           <div className="space-y-2">
-            <Label>主管</Label>
+            <Label>{t("fields.manager")}</Label>
             <Select name="managerId">
               <SelectTrigger>
-                <SelectValue placeholder="未指定" />
+                <SelectValue placeholder={tCommon("notSpecified")} />
               </SelectTrigger>
               <SelectContent>
                 {users
                   .filter((u) => u.role === "manager" && u.isActive)
                   .map((u) => (
                     <SelectItem key={u.id} value={u.id}>
-                      {u.name}（{u.departmentName ?? "—"}）
+                      {u.name} ({u.departmentName ?? tCommon("none")})
                     </SelectItem>
                   ))}
               </SelectContent>
@@ -365,10 +373,10 @@ function CreateUserDialog({
               onClick={() => setOpen(false)}
               disabled={pending}
             >
-              取消
+              {tCommon("cancel")}
             </Button>
             <Button type="submit" loading={pending}>
-              建立
+              {tCommon("create")}
             </Button>
           </DialogFooter>
         </form>
@@ -392,6 +400,9 @@ function EditUserDialog({
   users: UserAdminView[];
   onSaved: () => void;
 }) {
+  const t = useTranslations("users");
+  const tCommon = useTranslations("common");
+  const tRoles = useTranslations("roles");
   const [pending, setPending] = useState(false);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -407,10 +418,10 @@ function EditUserDialog({
     };
     try {
       await adminApi.users.update(user.id, body);
-      toast.success("已更新");
+      toast.success(t("updated"));
       onSaved();
     } catch (err) {
-      toast.error("更新失敗", {
+      toast.error(t("updateFailure"), {
         description: (err as { message?: string }).message,
       });
     } finally {
@@ -422,43 +433,43 @@ function EditUserDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>編輯使用者</DialogTitle>
+          <DialogTitle>{t("editTitle")}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <FieldRow
-            label="姓名"
+            label={t("fields.name")}
             name="name"
             defaultValue={user.name}
             required
             disabled={pending}
           />
           <FieldRow
-            label="電話"
+            label={t("fields.phone")}
             name="phone"
             defaultValue={user.phone ?? ""}
             disabled={pending}
           />
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label>角色</Label>
+              <Label>{t("fields.role")}</Label>
               <Select name="role" defaultValue={user.role}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="employee">員工</SelectItem>
-                  <SelectItem value="manager">主管</SelectItem>
+                  <SelectItem value="employee">{tRoles("employee")}</SelectItem>
+                  <SelectItem value="manager">{tRoles("manager")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>部門</Label>
+              <Label>{t("fields.department")}</Label>
               <Select
                 name="departmentId"
                 defaultValue={user.departmentId ?? ""}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="未指定" />
+                  <SelectValue placeholder={tCommon("notSpecified")} />
                 </SelectTrigger>
                 <SelectContent>
                   {departments.map((d) => (
@@ -471,17 +482,17 @@ function EditUserDialog({
             </div>
           </div>
           <div className="space-y-2">
-            <Label>主管</Label>
+            <Label>{t("fields.manager")}</Label>
             <Select name="managerId" defaultValue={user.managerId ?? ""}>
               <SelectTrigger>
-                <SelectValue placeholder="未指定" />
+                <SelectValue placeholder={tCommon("notSpecified")} />
               </SelectTrigger>
               <SelectContent>
                 {users
                   .filter((u) => u.id !== user.id && u.role === "manager" && u.isActive)
                   .map((u) => (
                     <SelectItem key={u.id} value={u.id}>
-                      {u.name}（{u.departmentName ?? "—"}）
+                      {u.name} ({u.departmentName ?? tCommon("none")})
                     </SelectItem>
                   ))}
               </SelectContent>
@@ -494,10 +505,10 @@ function EditUserDialog({
               onClick={() => onOpenChange(false)}
               disabled={pending}
             >
-              取消
+              {tCommon("cancel")}
             </Button>
             <Button type="submit" loading={pending}>
-              儲存
+              {tCommon("save")}
             </Button>
           </DialogFooter>
         </form>
@@ -517,6 +528,8 @@ function ResetPasswordDialog({
   user: UserAdminView;
   onDone: () => void;
 }) {
+  const t = useTranslations("users");
+  const tCommon = useTranslations("common");
   const [pending, setPending] = useState(false);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -527,10 +540,10 @@ function ResetPasswordDialog({
       await adminApi.users.resetPassword(user.id, {
         password: String(fd.get("password") ?? ""),
       });
-      toast.success("密碼已重設");
+      toast.success(t("passwordReset"));
       onDone();
     } catch (err) {
-      toast.error("重設失敗", {
+      toast.error(t("resetFailure"), {
         description: (err as { message?: string }).message,
       });
     } finally {
@@ -542,14 +555,14 @@ function ResetPasswordDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle>重設 {user.name} 的密碼</DialogTitle>
+          <DialogTitle>{t("resetTitle", { name: user.name })}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <FieldRow
-            label="新密碼"
+            label={t("fields.newPassword")}
             name="password"
             type="password"
-            placeholder="至少 8 個字元"
+            placeholder={t("passwordPlaceholder")}
             required
             disabled={pending}
           />
@@ -560,10 +573,10 @@ function ResetPasswordDialog({
               onClick={() => onOpenChange(false)}
               disabled={pending}
             >
-              取消
+              {tCommon("cancel")}
             </Button>
             <Button type="submit" loading={pending}>
-              重設
+              {t("resetPassword")}
             </Button>
           </DialogFooter>
         </form>
