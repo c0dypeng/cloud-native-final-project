@@ -1,5 +1,0 @@
-$ drizzle-kit migrate
-No config path provided, using default 'drizzle.config.ts'
-Reading config file '/Users/jiangyanhong/Desktop/2026-Spring/cloud-native-final-project/packages/database/drizzle.config.ts'
-Using 'postgres' driver for database querying
-[⣷] applying migrations...[2K[1G[✓] migrations applied successfully!

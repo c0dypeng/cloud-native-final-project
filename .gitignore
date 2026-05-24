@@ -39,6 +39,7 @@ dist
 # Debug
 npm-debug.log*
 bun-debug.log*
+packages/database/migrate.log
 
 # Misc
 .DS_Store
