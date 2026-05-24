@@ -7,6 +7,15 @@ SEED_ADMIN_USERNAME ?= admin
 SEED_ADMIN_PASSWORD ?= changeme
 SEED_USER_PASSWORD ?= password123
 
+# Auto-load .env if present so `make migrate` / `make seed` pick up
+# DATABASE_URL without the caller having to `export` it. Explicit
+# command-line overrides (e.g. `make migrate DATABASE_URL=...`) still win
+# because of the `?=` assignments above.
+ifneq (,$(wildcard ./.env))
+	include .env
+	export
+endif
+
 # Default target
 help:
 	@echo "Safety Response System - Docker Commands"
@@ -60,28 +69,41 @@ dev-docker:
 	docker compose -f docker-compose.dev.yml up
 
 # Docker production
+# Brings the stack up and then runs migrations once Postgres is healthy,
+# so `make up && make seed` is enough for a working app — no manual
+# migrate step required.
 up:
 	docker compose up -d
+	@echo "→ Waiting for Postgres to be healthy…"
+	@for i in $$(seq 1 30); do \
+		docker compose exec -T postgres pg_isready -U safety -d safetydb >/dev/null 2>&1 && break; \
+		sleep 2; \
+	done
+	@$(MAKE) migrate
 
 down:
 	docker compose down
 
-# Database migrations and seed
+# Database migrations and seed.
+# Use `bunx` so we don't depend on `node_modules/.bin` being on PATH or
+# on `bun run`'s script-resolution shim (which failed on a fresh checkout).
 migrate:
-	cd packages/database && DATABASE_URL=$(DATABASE_URL) bun run db:migrate
+	cd packages/database && DATABASE_URL='$(DATABASE_URL)' bunx drizzle-kit migrate
 
 seed:
-	cd packages/database && DATABASE_URL=$(DATABASE_URL) \
-		SEED_ADMIN_USERNAME=$(or $(SEED_ADMIN_USERNAME),admin) \
-		SEED_ADMIN_PASSWORD=$(or $(SEED_ADMIN_PASSWORD),changeme) \
-		bun run seed
+	cd packages/database && DATABASE_URL='$(DATABASE_URL)' \
+		SEED_ADMIN_USERNAME='$(SEED_ADMIN_USERNAME)' \
+		SEED_ADMIN_PASSWORD='$(SEED_ADMIN_PASSWORD)' \
+		SEED_USER_PASSWORD='$(SEED_USER_PASSWORD)' \
+		bunx tsx src/seed.ts
 
 seed-load:
-	cd packages/database && DATABASE_URL=$(DATABASE_URL) \
+	cd packages/database && DATABASE_URL='$(DATABASE_URL)' \
 		SEED_SCALE=load \
-		SEED_ADMIN_USERNAME=$(or $(SEED_ADMIN_USERNAME),admin) \
-		SEED_ADMIN_PASSWORD=$(or $(SEED_ADMIN_PASSWORD),changeme) \
-		bun run seed
+		SEED_ADMIN_USERNAME='$(SEED_ADMIN_USERNAME)' \
+		SEED_ADMIN_PASSWORD='$(SEED_ADMIN_PASSWORD)' \
+		SEED_USER_PASSWORD='$(SEED_USER_PASSWORD)' \
+		bunx tsx src/seed.ts
 
 # ── Tests ─────────────────────────────────────────────────────────────────────
 test:
@@ -146,21 +168,12 @@ demo-ready:
 		cp .env.example .env; \
 		echo "WARNING: edit .env to set real values before production use."; \
 	fi
-	@echo "→ Booting Postgres + Redis + 3 app services…"
-	docker compose up -d
+	@echo "→ Booting Postgres + Redis + 3 app services (auto-migrates on healthy)…"
+	$(MAKE) up
 	@echo "→ Bringing up observability (Prometheus + Grafana + Loki + Promtail)…"
 	docker compose --profile observability up -d
-	@echo "→ Waiting for Postgres…"
-	@for i in $$(seq 1 30); do \
-		docker compose exec -T postgres pg_isready -U safety -d safetydb >/dev/null 2>&1 && break; \
-		sleep 2; \
-	done
-	@echo "→ Applying Drizzle migrations…"
-	$(MAKE) migrate DATABASE_URL='$(DATABASE_URL)'
 	@echo "→ Seeding demo data (100 users, 5 depts × 4-level hierarchy)…"
-	$(MAKE) seed DATABASE_URL='$(DATABASE_URL)' \
-		SEED_ADMIN_USERNAME='$(SEED_ADMIN_USERNAME)' \
-		SEED_ADMIN_PASSWORD='$(SEED_ADMIN_PASSWORD)'
+	$(MAKE) seed
 	@$(MAKE) demo-status
 
 demo-status:
