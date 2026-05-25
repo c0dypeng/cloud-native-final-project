@@ -56,6 +56,8 @@
   "team": {
     "header": "Team Care",
     "eventLabel": "Event: {event}",
+    "activeEventsLabel": "{count} active event(s). Pick one to view team status.",
+    "eventSelectorLabel": "Event",
     "noEventLabel": "No active event. You can still browse your team's contact info.",
     "memberCount": "My team ({count})",
     "searchPlaceholder": "Search name, email, department…",

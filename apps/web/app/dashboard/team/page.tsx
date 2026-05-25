@@ -33,13 +33,14 @@ export default async function TeamPage() {
           {t("header")}
         </h1>
         <p className="text-sm text-muted-foreground">
-          {primaryEvent
-            ? t("eventLabel", { event: primaryEvent.title })
-            : t("noEventLabel")}
+          {activeEvents.length === 0
+            ? t("noEventLabel")
+            : t("activeEventsLabel", { count: activeEvents.length })}
         </p>
       </header>
       <TeamCarePage
-        eventId={primaryEvent?.id ?? null}
+        activeEvents={activeEvents}
+        initialEventId={primaryEvent?.id ?? null}
         initialStatus={teamStatus}
         fallbackTeam={team?.members ?? null}
       />

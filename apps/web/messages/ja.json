@@ -56,6 +56,8 @@
   "team": {
     "header": "チームケア",
     "eventLabel": "イベント: {event}",
+    "activeEventsLabel": "進行中のイベントが {count} 件あります。表示するイベントを選んでください。",
+    "eventSelectorLabel": "イベント",
     "noEventLabel": "進行中のイベントはありません。チームの連絡先は確認できます。",
     "memberCount": "自分のチーム ({count})",
     "searchPlaceholder": "名前、メール、部門を検索…",

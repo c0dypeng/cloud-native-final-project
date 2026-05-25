@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import {
   CheckCircle2,
@@ -20,8 +20,16 @@ import { Button } from "@workspace/ui/components/button";
 import { Badge } from "@workspace/ui/components/badge";
 import { Input } from "@workspace/ui/components/input";
 import { Tabs, TabsList, TabsTrigger } from "@workspace/ui/components/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select";
 import { cn } from "@workspace/ui/lib/utils";
 import type {
+  Event,
   SseEvent,
   TeamMember,
   TeamMemberWithStatus,
@@ -33,20 +41,41 @@ import { useSse } from "@/hooks/use-sse";
 type Filter = "all" | "not_reported" | "safe" | "need_help";
 
 interface Props {
-  eventId: string | null;
+  activeEvents: Event[];
+  initialEventId: string | null;
   initialStatus: TeamStatusResponse | null;
   fallbackTeam: TeamMember[] | null;
 }
 
 export function TeamCarePage({
-  eventId,
+  activeEvents,
+  initialEventId,
   initialStatus,
   fallbackTeam,
 }: Props) {
   const t = useTranslations("team");
+  const [eventId, setEventId] = useState<string | null>(initialEventId);
   const [status, setStatus] = useState<TeamStatusResponse | null>(initialStatus);
   const [filter, setFilter] = useState<Filter>("all");
   const [query, setQuery] = useState("");
+
+  useEffect(() => {
+    if (!eventId) {
+      setStatus(null);
+      return;
+    }
+    if (eventId === initialEventId && initialStatus) return;
+    let cancelled = false;
+    api.manager
+      .teamStatus(eventId)
+      .then((s) => {
+        if (!cancelled) setStatus(s);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [eventId, initialEventId, initialStatus]);
 
   useSse({
     onEvent: (e: SseEvent) => {
@@ -97,6 +126,33 @@ export function TeamCarePage({
 
   return (
     <div className="space-y-4">
+      {activeEvents.length > 0 && (
+        <Card>
+          <CardContent className="py-3 flex flex-wrap items-center gap-3">
+            <label
+              htmlFor="event-select"
+              className="text-sm font-medium shrink-0"
+            >
+              {t("eventSelectorLabel")}
+            </label>
+            <Select
+              value={eventId ?? ""}
+              onValueChange={(v) => setEventId(v)}
+            >
+              <SelectTrigger id="event-select" className="max-w-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {activeEvents.map((ev) => (
+                  <SelectItem key={ev.id} value={ev.id}>
+                    {ev.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </CardContent>
+        </Card>
+      )}
       <Card>
         <CardHeader className="pb-3">
           <div className="flex flex-wrap items-center justify-between gap-3">

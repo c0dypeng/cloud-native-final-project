@@ -56,6 +56,8 @@
   "team": {
     "header": "主管關懷",
     "eventLabel": "事件：{event}",
+    "activeEventsLabel": "目前有 {count} 個進行中的事件，請選擇要查看的事件。",
+    "eventSelectorLabel": "選擇事件",
     "noEventLabel": "目前沒有進行中的事件，您可以瀏覽團隊聯絡資訊。",
     "memberCount": "我的部屬 ({count} 位)",
     "searchPlaceholder": "搜尋姓名、信箱、部門…",
