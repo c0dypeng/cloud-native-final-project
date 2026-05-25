@@ -32,6 +32,7 @@ RUN mkdir -p /app/apps/admin/public
 ARG NEXT_PUBLIC_API_URL=""
 ENV NODE_ENV=production
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV API_URL=http://server:4000
 
 RUN bun run build --filter=admin
 

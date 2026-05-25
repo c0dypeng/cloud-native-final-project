@@ -35,6 +35,7 @@ ARG NEXT_PUBLIC_SITE_URL="http://huyouan.local"
 ENV NODE_ENV=production
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
+ENV API_URL=http://server:4000
 
 RUN bun run build --filter=web
 
