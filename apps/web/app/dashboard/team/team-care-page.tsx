@@ -140,7 +140,11 @@ export function TeamCarePage({
               onValueChange={(v) => setEventId(v)}
             >
               <SelectTrigger id="event-select" className="max-w-sm">
-                <SelectValue />
+                <SelectValue>
+                  {(value) =>
+                    activeEvents.find((ev) => ev.id === value)?.title ?? ""
+                  }
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {activeEvents.map((ev) => (

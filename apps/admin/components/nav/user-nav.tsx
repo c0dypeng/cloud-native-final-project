@@ -20,16 +20,22 @@ export async function UserNav() {
   const tNav = await getTranslations("nav");
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-          <Avatar className="h-8 w-8 bg-primary text-primary-foreground">
-            <AvatarFallback className="bg-primary text-primary-foreground">
-              {username.slice(0, 2).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56" align="end" forceMount>
+      <DropdownMenuTrigger
+        render={
+          <Button
+            variant="ghost"
+            className="relative h-8 w-8 rounded-full p-0"
+            aria-label={username}
+          >
+            <Avatar className="h-8 w-8 bg-primary text-primary-foreground">
+              <AvatarFallback className="bg-primary text-primary-foreground">
+                {username.slice(0, 2).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+          </Button>
+        }
+      />
+      <DropdownMenuContent className="w-56" align="end">
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium leading-none">{username}</p>
@@ -39,14 +45,19 @@ export async function UserNav() {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <form action={logout}>
-            <button type="submit" className="flex w-full items-center">
-              <LogOut className="mr-2 h-4 w-4" />
-              <span>{tNav("logout")}</span>
-            </button>
-          </form>
-        </DropdownMenuItem>
+        <form action={logout}>
+          <DropdownMenuItem
+            render={
+              <button
+                type="submit"
+                className="flex w-full items-center cursor-pointer"
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>{tNav("logout")}</span>
+              </button>
+            }
+          />
+        </form>
       </DropdownMenuContent>
     </DropdownMenu>
   );
