@@ -1,5 +1,7 @@
+"use client";
+
 import { LogOut } from "lucide-react";
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
 import { Button } from "@workspace/ui/components/button";
 import {
   DropdownMenu,
@@ -11,13 +13,14 @@ import {
 } from "@workspace/ui/components/dropdown-menu";
 import { Avatar, AvatarFallback } from "@workspace/ui/components/avatar";
 import { logout } from "@/lib/actions";
-import { verifySession } from "@/lib/dal";
 
-export async function UserNav() {
-  const session = await verifySession();
-  const username = session?.username ?? "admin";
-  const tRoles = await getTranslations("roles");
-  const tNav = await getTranslations("nav");
+interface Props {
+  username: string;
+}
+
+export function UserNav({ username }: Props) {
+  const tRoles = useTranslations("roles");
+  const tNav = useTranslations("nav");
   return (
     <DropdownMenu>
       <DropdownMenuTrigger

@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Suspense } from "react";
 import { ShieldCheck } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { MainNav } from "@/components/nav/main-nav";
@@ -16,6 +15,7 @@ export default async function DashboardLayout({
   const session = await verifySession();
   if (!session) redirect("/login");
   const tApp = await getTranslations("app");
+  const username = session.username;
 
   return (
     <div className="flex min-h-screen bg-muted/30">
@@ -50,9 +50,7 @@ export default async function DashboardLayout({
           </div>
           <div className="flex-1" />
           <LanguageSwitcher />
-          <Suspense fallback={null}>
-            <UserNav />
-          </Suspense>
+          <UserNav username={username} />
         </header>
         <main className="flex-1 overflow-auto p-4 lg:p-6">{children}</main>
       </div>
