@@ -1,0 +1,71 @@
+name: deploy
+on:
+  # Auto-deploy after CI passes on main.
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+    branches: [main]
+  # Manual override / rollback button in the Actions tab.
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref to deploy (default: main)"
+        required: false
+        default: "main"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: deploy to ubuntu server
+    # Skip auto-runs that were triggered by a FAILED CI run.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: [self-hosted, production]
+    env:
+      DEPLOY_DIR: /opt/huyouan
+      REF: ${{ github.event.inputs.ref || 'main' }}
+    steps:
+      - name: pull latest code
+        working-directory: ${{ env.DEPLOY_DIR }}
+        run: |
+          git fetch --all --prune
+          git checkout "$REF"
+          git pull --ff-only origin "$REF"
+          echo "deploying commit: $(git rev-parse --short HEAD)"
+
+      - name: build images
+        working-directory: ${{ env.DEPLOY_DIR }}
+        run: docker compose build --pull
+
+      - name: start stack
+        working-directory: ${{ env.DEPLOY_DIR }}
+        run: docker compose up -d --remove-orphans
+
+      - name: run migrations
+        working-directory: ${{ env.DEPLOY_DIR }}
+        run: make migrate
+
+      - name: health check
+        working-directory: ${{ env.DEPLOY_DIR }}
+        run: |
+          for i in {1..30}; do
+            if curl -fsS http://localhost:4000/health > /dev/null; then
+              echo "server healthy"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "server did not become healthy in 60s"
+          docker compose logs --tail=100 server
+          exit 1
+
+      - name: prune old images
+        if: success()
+        run: docker image prune -f
