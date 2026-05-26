@@ -449,13 +449,13 @@ PWA 離線 & Service Worker + Web App Manifest & \textcolor{msuccess}{\cmark} \\
     \end{itemize}
   \end{block}
   \vspace{0.3cm}
-  \begin{alertblock}{SLO 目標}
+  \begin{exampleblock}{實測結果（1k VU）}
     \begin{itemize}\small
-      \item p95 回應時間 \textbf{\textless{} 500 ms}
-      \item 錯誤率 \textbf{\textless{} 0.5\%}
-      \item 持續 30 秒高峰不降級
+      \item p95 回應時間 \textbf{109.8 ms}（SLO \textless{} 500 ms \textcolor{msuccess}{\cmark}）
+      \item 錯誤率 \textbf{0.000\%}（SLO \textless{} 0.5\% \textcolor{msuccess}{\cmark}）
+      \item 成功回報 \textbf{64,599 筆}，0 筆失敗
     \end{itemize}
-  \end{alertblock}
+  \end{exampleblock}
 \end{column}
 \end{columns}
 \end{frame}
@@ -485,7 +485,7 @@ PWA 離線 & Service Worker + Web App Manifest & \textcolor{msuccess}{\cmark} \\
 \begin{exampleblock}{測試小結}
   \small
   整合測試（Vitest + Supertest）每個 suite 前 \texttt{resetAndSeed()}，確保隔離；
-  負載測試 k6 1k VU × 30s，目標 p95 \textless{} 500ms、錯誤率 \textless{} 0.5\%。
+  負載測試 k6 1k VU 實測：p95 \textbf{109.8 ms}（SLO \textless{} 500ms）、錯誤率 \textbf{0.000\%}、成功回報 64,599 筆。
 \end{exampleblock}
 \end{frame}
 
@@ -586,7 +586,7 @@ PWA 離線 & Service Worker + Web App Manifest & \textcolor{msuccess}{\cmark} \\
 \end{column}
 \begin{column}{0.24\textwidth}
   \begin{block}{\centering 系統測試}
-    \centering\small 整合 + k6 負載\\1k VU / p95 \textless{} 500ms
+    \centering\small 整合 + k6 1k VU\\p95 109 ms / 錯誤率 0\%
   \end{block}
 \end{column}
 \begin{column}{0.24\textwidth}
