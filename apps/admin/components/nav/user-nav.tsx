@@ -1,6 +1,7 @@
 "use client";
 
-import { LogOut } from "lucide-react";
+import Link from "next/link";
+import { LogOut, UserCircle } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@workspace/ui/components/button";
 import {
@@ -47,6 +48,18 @@ export function UserNav({ username }: Props) {
             </p>
           </div>
         </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          render={
+            <Link
+              href="/profile"
+              className="flex w-full items-center cursor-pointer"
+            >
+              <UserCircle className="mr-2 h-4 w-4" />
+              <span>{tNav("profile")}</span>
+            </Link>
+          }
+        />
         <DropdownMenuSeparator />
         <form action={logout}>
           <DropdownMenuItem

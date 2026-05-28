@@ -12,7 +12,18 @@
     "users": "Users",
     "departments": "Departments",
     "reports": "Reports",
+    "profile": "Profile",
     "logout": "Sign out"
+  },
+  "profile": {
+    "title": "Profile",
+    "subtitle": "View your administrator account details.",
+    "accountInfo": "Account information",
+    "accountInfoNote": "Contact the operations team to change account data.",
+    "username": "Username",
+    "role": "Role",
+    "adminId": "Admin ID",
+    "environment": "Environment"
   },
   "login": {
     "title": "Administrator sign in",

@@ -12,7 +12,18 @@
     "users": "使用者",
     "departments": "組織架構",
     "reports": "統計報表",
+    "profile": "個人資料",
     "logout": "登出"
+  },
+  "profile": {
+    "title": "個人資料",
+    "subtitle": "檢視您的管理員帳戶資訊。",
+    "accountInfo": "帳戶資訊",
+    "accountInfoNote": "如需修改帳戶資料，請聯絡系統維運人員。",
+    "username": "使用者名稱",
+    "role": "角色",
+    "adminId": "管理員 ID",
+    "environment": "執行環境"
   },
   "login": {
     "title": "管理員登入",

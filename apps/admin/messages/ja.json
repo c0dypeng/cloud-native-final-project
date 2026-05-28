@@ -12,7 +12,18 @@
     "users": "ユーザー",
     "departments": "組織",
     "reports": "レポート",
+    "profile": "プロフィール",
     "logout": "ログアウト"
+  },
+  "profile": {
+    "title": "プロフィール",
+    "subtitle": "管理者アカウントの情報を確認できます。",
+    "accountInfo": "アカウント情報",
+    "accountInfoNote": "アカウント情報の変更は運用担当者にご連絡ください。",
+    "username": "ユーザー名",
+    "role": "ロール",
+    "adminId": "管理者 ID",
+    "environment": "実行環境"
   },
   "login": {
     "title": "管理者ログイン",
