@@ -205,7 +205,7 @@
 即時更新 & Server-Sent Events fan-out（4 種廣播模式） & \textcolor{msuccess}{\cmark} \\
 階層查詢 & PostgreSQL \texttt{WITH RECURSIVE} CTE & \textcolor{msuccess}{\cmark} \\
 自動提醒 & node-cron 每 5 分鐘 + Redis 計數限流 & \textcolor{msuccess}{\cmark} \\
-統計快取 & Redis TTL 3s，upsert 時主動 DEL & \textcolor{msuccess}{\cmark} \\
+統計快取 & Redis TTL 15s，upsert 時主動 DEL & \textcolor{msuccess}{\cmark} \\
 多語言   & next-intl，zh-TW / en / ja & \textcolor{msuccess}{\cmark} \\
 PWA 離線 & Service Worker + Web App Manifest & \textcolor{msuccess}{\cmark} \\
 \bottomrule
@@ -363,7 +363,7 @@ PWA 離線 & Service Worker + Web App Manifest & \textcolor{msuccess}{\cmark} \\
 \begin{column}{0.44\textwidth}
   \begin{block}{Redis 統計快取}
     \begin{itemize}\small
-      \item \texttt{/api/events/:id/stats} 快取 \textbf{3 秒}
+      \item \texttt{/api/events/:id/stats} 快取 \textbf{15 秒}
       \item 每次 report upsert \textrightarrow{} 主動 \texttt{DEL}
       \item 高峰並發查詢打快取，DB 壓力最小化
     \end{itemize}
@@ -452,8 +452,8 @@ PWA 離線 & Service Worker + Web App Manifest & \textcolor{msuccess}{\cmark} \\
   \begin{exampleblock}{實測結果（1k VU）}
     \begin{itemize}\small
       \item p95 回應時間 \textbf{109.8 ms}（SLO \textless{} 500 ms \textcolor{msuccess}{\cmark}）
-      \item 錯誤率 \textbf{0.000\%}（SLO \textless{} 0.5\% \textcolor{msuccess}{\cmark}）
-      \item 成功回報 \textbf{64,599 筆}，0 筆失敗
+      \item 報告提交 \textbf{64,599 筆全部成功}（0 失敗）
+      \item HTTP 整體錯誤率 \textbf{1.34\%}（含 login 突發）
     \end{itemize}
   \end{exampleblock}
 \end{column}
@@ -466,7 +466,7 @@ PWA 離線 & Service Worker + Web App Manifest & \textcolor{msuccess}{\cmark} \\
   \begin{block}{資料層}
     \begin{itemize}\small
       \item \textbf{PgBouncer}：連線池，避免 DB 連線耗盡
-      \item \textbf{Redis cache}：stats 3s TTL，QPS 大幅降低
+      \item \textbf{Redis cache}：stats 15s TTL，QPS 大幅降低
       \item Report \textbf{upsert} 語意，避免重複寫入競爭
     \end{itemize}
   \end{block}
@@ -485,7 +485,7 @@ PWA 離線 & Service Worker + Web App Manifest & \textcolor{msuccess}{\cmark} \\
 \begin{exampleblock}{測試小結}
   \small
   整合測試（Vitest + Supertest）每個 suite 前 \texttt{resetAndSeed()}，確保隔離；
-  負載測試 k6 1k VU 實測：p95 \textbf{109.8 ms}（SLO \textless{} 500ms）、錯誤率 \textbf{0.000\%}、成功回報 64,599 筆。
+  負載測試 k6 1k VU 實測：p95 \textbf{109.8 ms}（SLO \textless{} 500ms 通過）、報告 \textbf{64,599 筆全部成功}、HTTP 整體錯誤率 \textbf{1.34\%}。
 \end{exampleblock}
 \end{frame}
 
@@ -496,7 +496,7 @@ PWA 離線 & Service Worker + Web App Manifest & \textcolor{msuccess}{\cmark} \\
 \begin{frame}[shrink=12]{可觀測性堆疊}
 \begin{columns}[T,onlytextwidth]
 \begin{column}{0.55\textwidth}
-  \begin{block}{自訂 Prometheus Metrics（10 項）}
+  \begin{block}{自訂 Prometheus Metrics（9 項）}
     \renewcommand{\arraystretch}{1.0}
     \begin{tabular}{ll}
     \scriptsize\texttt{http\_requests\_total}          & \scriptsize 請求計數 \\
@@ -514,8 +514,8 @@ PWA 離線 & Service Worker + Web App Manifest & \textcolor{msuccess}{\cmark} \\
   \begin{block}{Grafana Dashboards（3 張）}
     \begin{itemize}\small
       \item \textbf{API Overview}：QPS / p95 / 錯誤率
-      \item \textbf{Business Metrics}：回報率、SSE、事件狀態
-      \item \textbf{Infrastructure}：CPU、記憶體、DB 連線池
+      \item \textbf{Safety SLO}：回報率、SSE、事件狀態
+      \item \textbf{Backing Services}：CPU、記憶體、DB 連線池
     \end{itemize}
   \end{block}
   \begin{block}{Loki + Promtail}
@@ -536,7 +536,7 @@ PWA 離線 & Service Worker + Web App Manifest & \textcolor{msuccess}{\cmark} \\
     \begin{itemize}\small
       \item \textbf{HighErrorRate}：5 分鐘錯誤率 \textgreater{} 1\%
       \item \textbf{HighP95Latency}：p95 延遲 \textgreater{} 500 ms
-      \item \textbf{SSEConnectionDrop}：連線數驟降偵測
+      \item \textbf{SafetyReportSubmitErrors}：回報失敗偵測
     \end{itemize}
   \end{alertblock}
   \vspace{0.2cm}
@@ -586,7 +586,7 @@ PWA 離線 & Service Worker + Web App Manifest & \textcolor{msuccess}{\cmark} \\
 \end{column}
 \begin{column}{0.24\textwidth}
   \begin{block}{\centering 系統測試}
-    \centering\small 整合 + k6 1k VU\\p95 109 ms / 錯誤率 0\%
+    \centering\small 整合 + k6 1k VU\\p95 109 ms / 64,599 筆成功
   \end{block}
 \end{column}
 \begin{column}{0.24\textwidth}

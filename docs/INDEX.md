@@ -2,6 +2,8 @@
 
 ## For the demo + report
 
+- **[USER_STORIES.md](./USER_STORIES.md)** — 19 User Stories (Employee/Manager/Admin) with Acceptance Criteria
+- **[LOAD_TEST_RESULTS.md](./LOAD_TEST_RESULTS.md)** — k6 report-surge analysis (1k VU, p95=110ms, 177 rps)
 - **[DEMO.md](./DEMO.md)** — 5-minute live demo script + speaker notes
 - **[architecture.md](./architecture.md)** — high-level system diagram, 12-Factor mapping, HA story
 - **[er.md](./er.md)** — entity-relationship diagram (Mermaid)

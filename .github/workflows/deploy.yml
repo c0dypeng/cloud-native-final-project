@@ -56,7 +56,7 @@ jobs:
         working-directory: ${{ env.DEPLOY_DIR }}
         run: |
           for i in {1..30}; do
-            if curl -fsS http://localhost:4000/health > /dev/null; then
+            if curl -fsS http://localhost:4000/api/health > /dev/null; then
               echo "server healthy"
               exit 0
             fi

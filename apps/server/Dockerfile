@@ -30,11 +30,11 @@ WORKDIR /app
 # Workspace package dist + package.json (no source maps shipped to prod).
 COPY --from=installer /app/packages/api-contracts/package.json ./packages/api-contracts/package.json
 COPY --from=installer /app/packages/api-contracts/dist ./packages/api-contracts/dist
-COPY --from=installer /app/packages/api-contracts/node_modules ./packages/api-contracts/node_modules
 COPY --from=installer /app/packages/database/package.json ./packages/database/package.json
 COPY --from=installer /app/packages/database/dist ./packages/database/dist
 COPY --from=installer /app/packages/database/drizzle ./packages/database/drizzle
 COPY --from=installer /app/packages/database/node_modules ./packages/database/node_modules
+COPY --from=installer /app/packages/api-contracts/node_modules ./packages/api-contracts/node_modules
 
 # Server build artefacts and resolved deps.
 COPY --from=installer /app/apps/server/dist ./apps/server/dist

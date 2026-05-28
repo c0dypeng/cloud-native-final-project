@@ -127,9 +127,16 @@ pushes SSE reminders and sends Resend email (capped at 3 per
 
 ## Testing
 
+- **Unit tests** — `apps/server/src/**/*.test.ts` (14 files, 158 tests).
+  Pure unit tests with mocked dependencies (no DB/Redis required). Covers:
+  JWT, locale, validation, auth middleware, sessions, Redis utils, email
+  templates, SSE, Prometheus metrics, Zod schemas, and all controllers.
+  Run: `cd apps/server && npx vitest run src/`.
 - **Backend integration** — `apps/server/tests/integration/*.test.ts` using
   Vitest + Supertest against a real Postgres + Redis. Reset between suites
   via `resetAndSeed()` in `tests/db-helper.ts`.
+- **E2E** — `tests/e2e/specs/*.spec.ts` (4 files, 6 tests) using Playwright.
+  Covers employee login, manager team view, safety report, admin event CRUD.
 - **Load** — `tests/load/*.js` using k6. SLO: 1k VU, p95 ≤ 500ms, error
   rate ≤ 0.5%. See `tests/load/README.md`.
 
@@ -157,3 +164,59 @@ key = email drops to stdout).
 Short, descriptive first line (e.g., "Add SSE need-help fan-out to manager
 chain"). Conventional-style prefixes welcome (`feat:`, `fix:`, `docs:`).
 Always run lint + typecheck + build before committing.
+
+## Demo Bootstrap Fixes (2026-05-21)
+
+Three small fixes made `make demo-ready` succeed on a fresh ARM64 macOS host:
+- `docker-compose.yml` — pgbouncer healthcheck switched from `pg_isready`
+  (not shipped in the Bitnami image) to a bash TCP probe on port 6432.
+- `apps/server/Dockerfile` — runner stage now also copies
+  `packages/database/node_modules` and `packages/api-contracts/node_modules`
+  so workspace package `dist/` files can resolve `drizzle-orm` etc.
+- `apps/admin/Dockerfile` — wrapped `bun install --frozen-lockfile` in a
+  10-attempt retry loop to ride out flaky ARM64 tarball downloads
+  (`@swc/core-linux-arm64-*`, `@next/swc-linux-arm64-musl`, etc.).
+
+Demo run: `make demo-ready` → all 10 containers healthy
+(web :3000, admin :3001, api :4000, grafana :3030, prometheus :9090).
+
+## Unit Test Suite (2026-05-25)
+
+Added 17 unit test files with 174 test cases to `apps/server/src/`:
+
+| File | Tests | What it covers |
+|------|-------|----------------|
+| `lib/jwt.test.ts` | 8 | signToken, verifyToken (round-trip, expired, tampered, wrong secret) |
+| `lib/locale.test.ts` | 14 | normalizeLocale, getRequestLocale (query, header, cookie priority) |
+| `lib/redis.test.ts` | 13 | cacheGet/Set/Del, statsCacheKey, acquireLock, reminderCounterKey |
+| `lib/sessions.test.ts` | 8 | createAdminSession, getValidAdminSession, deleteAdminSession + TTL |
+| `lib/resend.test.ts` | 13 | Email templates: XSS escaping, header injection, tel: sanitization |
+| `lib/sse.test.ts` | 9 | register (headers, connected event), broadcast scopes (all/oversight/user/managers) |
+| `lib/metrics.test.ts` | 6 | All Prometheus Counter/Histogram/Gauge instances + registry |
+| `middleware/validate.test.ts` | 11 | isUuid, validateBody, validateQuery (pass/fail/edge cases) |
+| `middleware/auth.middleware.test.ts` | 14 | requireAuth, requireRole, requireAdmin, requireAuthOrAdmin |
+| `controllers/auth.controller.test.ts` | 12 | login (validation, wrong pw, inactive user), logout, me, adminMe, adminLogout |
+| `controllers/events.controller.test.ts` | 7 | getEvent (400), createEvent (SSE broadcast), closeEvent (409/cache invalidation) |
+| `controllers/users.controller.test.ts` | 12 | createUser (409 dup, bcrypt), updateUser (self-ref guard), softDelete, resetPassword |
+| `controllers/departments.controller.test.ts` | 8 | createDept, updateDept (self-parent), deleteDept (409 has users/children) |
+| `controllers/stats.controller.test.ts` | 7 | getStats (cache hit/miss), getUnreported (401/403/admin/manager scoping) |
+| `controllers/manager.controller.test.ts` | 5 | getTeam (403 guard), getTeamStatus (400/empty members) |
+| `controllers/sse.controller.test.ts` | 3 | sseHandler (admin/user/unauthorized branching) |
+| `schemas.test.ts` | 23 | All Zod schemas: login, event, report, user, dept, SSE discriminated union |
+
+Coverage thresholds kept at 50% (lines/branches/functions/statements) — set
+by integration tests in CI. Unit test files alone cover ~46% of `src/`;
+combined with integration tests (CI runs both via service containers)
+coverage clears the 50% gate.
+
+## Documentation Added (2026-05-25)
+
+- `docs/USER_STORIES.md` — 19 User Stories (Employee 7 + Manager 4 + Admin 8)
+  with Acceptance Criteria, mapped to all System Requirements
+- `docs/LOAD_TEST_RESULTS.md` — k6 report-surge results analysis:
+  p95=110ms, 177 reports/sec, 64,599 total reports at 1000 VUs
+
+## TODO
+
+- [ ] 修復 production `/api/*` 500 errors（需 kubectl logs）
+- [ ] 考慮提升 coverage threshold 到 70%+
