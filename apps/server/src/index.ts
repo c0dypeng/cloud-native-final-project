@@ -26,3 +26,14 @@ function shutdown(signal: string) {
 }
 process.on("SIGINT", () => shutdown("SIGINT"));
 process.on("SIGTERM", () => shutdown("SIGTERM"));
+
+// Defense-in-depth: a single bad request must never take down the pod (which
+// would drop every SSE connection and wipe in-memory admin sessions). Express 4
+// does not forward async-handler rejections to the error middleware, so log
+// loudly and keep serving instead of letting Node terminate the process.
+process.on("unhandledRejection", (reason) => {
+  logger.error({ err: reason }, "unhandledRejection — keeping process alive");
+});
+process.on("uncaughtException", (err) => {
+  logger.error({ err }, "uncaughtException — keeping process alive");
+});
