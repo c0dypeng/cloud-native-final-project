@@ -129,5 +129,11 @@
     "accident": "Accident",
     "drill": "Drill",
     "other": "Other"
+  },
+  "error": {
+    "title": "Authentication Error",
+    "description": "Please review the error below and try again.",
+    "fallback": "Sorry, there was a problem verifying your identity.",
+    "backToLogin": "Back to Login"
   }
 }
