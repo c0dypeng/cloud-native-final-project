@@ -90,6 +90,22 @@ describe("register", () => {
     cleanup();
   });
 
+  it("writes payloads as the default (unnamed) message event", () => {
+    // Regression: a named SSE event (`event: <type>`) never reaches the
+    // browser's EventSource.onmessage handler, silently breaking every
+    // real-time feature. The payload must be a bare `data:` frame so clients
+    // (which discriminate on the JSON `type`) receive it via onmessage.
+    const res = fakeRes();
+    const cleanup = register(res, { userId: "u1", role: "employee" });
+    const frame = res.chunks.find((c) => c.includes("connected"));
+    expect(frame).toBeTruthy();
+    expect(frame).toMatch(/^data: /);
+    expect(frame).not.toMatch(/event:/);
+    const parsed = JSON.parse(frame!.replace(/^data: /, "").trim());
+    expect(parsed.type).toBe("connected");
+    cleanup();
+  });
+
   it("increments sseActiveConnections", () => {
     const res = fakeRes();
     const cleanup = register(res, { userId: "u1", role: "employee" });
