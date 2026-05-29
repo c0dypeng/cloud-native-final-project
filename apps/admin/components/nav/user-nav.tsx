@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { LogOut, UserCircle } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { Button } from "@workspace/ui/components/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,19 +23,20 @@ export function UserNav({ username }: Props) {
   const tNav = useTranslations("nav");
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          className="relative h-8 w-8 rounded-full p-0"
-          aria-label={username}
-        >
-          <Avatar className="h-8 w-8 bg-primary text-primary-foreground">
-            <AvatarFallback className="bg-primary text-primary-foreground">
-              {username.slice(0, 2).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-        </Button>
-      </DropdownMenuTrigger>
+      <DropdownMenuTrigger
+        render={
+          <button
+            className="relative flex h-8 w-8 rounded-full items-center justify-center hover:opacity-80 transition-opacity"
+            aria-label={username}
+          >
+            <Avatar className="h-8 w-8 bg-primary text-primary-foreground">
+              <AvatarFallback className="bg-primary text-primary-foreground">
+                {username.slice(0, 2).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+          </button>
+        }
+      />
       <DropdownMenuContent className="w-56" align="end">
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
@@ -47,25 +47,23 @@ export function UserNav({ username }: Props) {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link
-            href="/profile"
-            className="flex w-full items-center cursor-pointer"
-          >
-            <UserCircle className="mr-2 h-4 w-4" />
-            <span>{tNav("profile")}</span>
-          </Link>
+        <DropdownMenuItem
+          render={
+            <Link href="/profile" className="flex w-full items-center cursor-pointer" />
+          }
+        >
+          <UserCircle className="mr-2 h-4 w-4" />
+          <span>{tNav("profile")}</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <form action={logout}>
-          <DropdownMenuItem asChild>
-            <button
-              type="submit"
-              className="flex w-full items-center cursor-pointer"
-            >
-              <LogOut className="mr-2 h-4 w-4" />
-              <span>{tNav("logout")}</span>
-            </button>
+          <DropdownMenuItem
+            render={
+              <button type="submit" className="flex w-full items-center cursor-pointer" />
+            }
+          >
+            <LogOut className="mr-2 h-4 w-4" />
+            <span>{tNav("logout")}</span>
           </DropdownMenuItem>
         </form>
       </DropdownMenuContent>
