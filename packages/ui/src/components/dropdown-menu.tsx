@@ -31,7 +31,7 @@ function DropdownMenuTrigger({
       render={resolvedRender}
       {...props}
     >
-      {resolvedRender ? undefined : children}
+      {children}
     </MenuPrimitive.Trigger>
   );
 }
@@ -127,7 +127,7 @@ function DropdownMenuItem({
       )}
       {...props}
     >
-      {resolvedRender ? undefined : children}
+      {children}
     </MenuPrimitive.Item>
   );
 }
