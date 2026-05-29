@@ -11,3 +11,4 @@ process.env.DATABASE_URL ||=
   "postgresql://safety:safety@localhost:5432/safetydb_test";
 process.env.REDIS_URL ||= "redis://localhost:6379";
 process.env.REMINDER_JOB_DISABLED = "1";
+process.env.REPORT_WORKER_DISABLED = "1";

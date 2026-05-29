@@ -247,6 +247,70 @@ PWA 離線 & Service Worker + Web App Manifest & \textcolor{msuccess}{\cmark} \\
 \end{center}
 \end{frame}
 
+\begin{frame}[shrink=10]{請求流程 — 員工回報「需要協助」}
+\begin{center}
+\begin{tikzpicture}[
+  scale=0.88, transform shape,
+  actor/.style={rectangle,rounded corners=3pt,draw=mprimary!60,
+    fill=mprimary!12,minimum width=1.9cm,minimum height=0.55cm,
+    font=\scriptsize\bfseries,text=mprimary!80!black,align=center},
+  msg/.style={-{Stealth[length=4pt]},thick,draw=mprimary!70,
+    font=\scriptsize},
+  msgr/.style={-{Stealth[length=4pt]},thick,draw=maccent!80,dashed,
+    font=\scriptsize},
+  lifeline/.style={dashed,draw=mprimary!30},
+  note/.style={rectangle,draw=msuccess!50,fill=msuccess!8,
+    rounded corners=2pt,font=\scriptsize,inner sep=2pt}
+]
+  % Actor headers
+  \node[actor] (pwa)    at (0,0)    {PWA\\(apps/web)};
+  \node[actor] (nx)     at (2.5,0)  {Next.js\\rewrite};
+  \node[actor] (api)    at (5.2,0)  {Express\\API};
+  \node[actor] (pgb)    at (8.0,0)  {PgBouncer\\+ Postgres};
+  \node[actor] (rds)    at (10.4,0) {Redis};
+  \node[actor] (mgr)    at (12.7,0) {主管\\SSE/Email};
+
+  % Lifelines
+  \foreach \a in {pwa,nx,api,pgb,rds,mgr} {
+    \draw[lifeline] (\a.south) -- ++(0,-6.4);
+  }
+
+  % Step 1
+  \draw[msg] (0,-0.6) -- node[above,font=\scriptsize]
+    {\textbf{1.} \texttt{POST /api/events/:id/report} + JWT cookie} (2.5,-0.6);
+  % Step 2
+  \draw[msg] (2.5,-1.1) -- node[above,font=\scriptsize]
+    {\textbf{2.} 同源 rewrite，Cookie 隨 header 轉發} (5.2,-1.1);
+  % Step 3 — auth + validate (self-arrow on api)
+  \draw[msg] (5.2,-1.6) -- ++(0.6,0) -- ++(0,-0.4) -- ++(-0.6,0);
+  \node[anchor=west,font=\scriptsize] at (5.85,-1.8)
+    {\textbf{3.} \texttt{extractToken} → \texttt{requireAuth} → Zod 驗證};
+  % Step 4 — DB upsert
+  \draw[msg] (5.2,-2.6) -- node[above,font=\scriptsize]
+    {\textbf{4.} \texttt{INSERT ... ON CONFLICT DO UPDATE}} (8.0,-2.6);
+  \draw[msg] (8.0,-3.0) -- node[below,font=\scriptsize]
+    {report row} (5.2,-3.0);
+  % Step 5 — cache invalidate
+  \draw[msg] (5.2,-3.5) -- node[above,font=\scriptsize]
+    {\textbf{5.} \texttt{DEL stats:eventId}} (10.4,-3.5);
+  % Step 6 — SSE broadcast
+  \draw[msgr] (5.2,-4.1) -- node[above,font=\scriptsize]
+    {\textbf{6.} \texttt{broadcastToOversight} + \texttt{sendToManagerChain}} (12.7,-4.1);
+  % Step 7 — email (only need_help)
+  \draw[msgr] (5.2,-4.7) -- node[above,font=\scriptsize]
+    {\textbf{7.} Resend email（best-effort）} (12.7,-4.7);
+  % Step 8 — response
+  \draw[msg] (5.2,-5.5) -- node[above,font=\scriptsize]
+    {\textbf{8.} \texttt{200 OK} \{ report \}} (0,-5.5);
+
+  % Note
+  \node[note,text width=11.5cm] at (6.5,-6.3)
+    {\textit{紅色虛線 = 主管端推播（SSE + Email），由 Step 6 \& 7 觸發。
+     若狀態為 \texttt{safe}，僅執行 1–6，跳過 Step 7。}};
+\end{tikzpicture}
+\end{center}
+\end{frame}
+
 \begin{frame}[shrink=18]{技術堆疊}
 \begin{columns}[T,onlytextwidth]
 \begin{column}{0.48\textwidth}
@@ -486,6 +550,70 @@ PWA 離線 & Service Worker + Web App Manifest & \textcolor{msuccess}{\cmark} \\
   \small
   整合測試（Vitest + Supertest）每個 suite 前 \texttt{resetAndSeed()}，確保隔離；
   負載測試 k6 1k VU 實測：p95 \textbf{109.8 ms}（SLO \textless{} 500ms 通過）、報告 \textbf{64,599 筆全部成功}、HTTP 整體錯誤率 \textbf{1.34\%}。
+\end{exampleblock}
+\end{frame}
+
+\begin{frame}[shrink=10]{訊息佇列 — 高流量下的非同步處理}
+\begin{center}
+\begin{tikzpicture}[scale=0.95,transform shape,
+  node distance=0.5cm and 1.0cm,
+  q/.style={rectangle,rounded corners=4pt,draw=maccent!70,
+    fill=maccent!12,text width=2.6cm,minimum height=0.85cm,
+    align=center,font=\small\bfseries,text=maccent!80!black},
+]
+  \node[svc=mprimary,text width=2.6cm] (api) {Express API\\(producer)};
+  \node[q,right=1.2cm of api] (stream)
+    {Redis Stream\\\texttt{report:events}\\MAXLEN \textasciitilde{}100k};
+  \node[svc=msuccess,right=1.2cm of stream,text width=2.6cm] (w1)
+    {worker pod 1\\\scriptsize XREADGROUP};
+  \node[svc=msuccess,above=0.3cm of w1,text width=2.6cm] (w2)
+    {worker pod 2};
+  \node[svc=msuccess,below=0.3cm of w1,text width=2.6cm] (w3)
+    {worker pod 3};
+
+  \draw[arr=mprimary] (api) -- node[above,font=\scriptsize]
+    {XADD + MAXLEN} (stream);
+  \draw[arr=msuccess] (stream) -- (w1);
+  \draw[arr=msuccess] (stream.east) -- ++(0.3,0.6) -| (w2.west);
+  \draw[arr=msuccess] (stream.east) -- ++(0.3,-0.6) -| (w3.west);
+
+  \node[anchor=south,font=\scriptsize,align=left,text width=11.5cm]
+    at (5.5,-1.8)
+    {\textbf{Consumer Group：}\texttt{report-workers}（pods 共享 backlog，
+     每則訊息只被一個 worker 處理；XACK 完成後才出隊）};
+\end{tikzpicture}
+\end{center}
+
+\begin{columns}[T,onlytextwidth]
+\begin{column}{0.48\textwidth}
+  \begin{block}{同步路徑（使用者等待）}
+    \begin{itemize}\small
+      \item Auth $\rightarrow$ Zod 驗證
+      \item DB upsert（\texttt{ON CONFLICT}）
+      \item Redis \texttt{DEL stats}
+      \item \textbf{XADD} 入列（< 1 ms）
+      \item \texttt{200 OK}
+    \end{itemize}
+  \end{block}
+\end{column}
+\begin{column}{0.48\textwidth}
+  \begin{block}{非同步路徑（背景 worker）}
+    \begin{itemize}\small
+      \item SSE \texttt{broadcastToOversight}
+      \item \texttt{need\_help} $\rightarrow$ 三段 SQL 平行查詢
+      \item \texttt{sendToManagerChain} 沿層上報
+      \item Resend email 寄給直屬主管
+      \item \texttt{XACK} 確認完成
+    \end{itemize}
+  \end{block}
+\end{column}
+\end{columns}
+
+\begin{exampleblock}{設計效益}
+\small
+HTTP 路徑從 \textbf{\textasciitilde{}80 ms} 降至 \textbf{\textasciitilde{}15 ms}（去除 email I/O）；
+worker 失敗自動 \texttt{XAUTOCLAIM} 重試；可觀測 4 個新 metrics：
+\texttt{mq\_published\_total}、\texttt{mq\_processed\_total}、\texttt{mq\_processing\_seconds}、\texttt{mq\_stream\_length}。
 \end{exampleblock}
 \end{frame}
 

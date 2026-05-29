@@ -68,3 +68,31 @@ export const statsCacheMisses = new Counter({
   help: "Stats endpoint cache misses",
   registers: [register],
 });
+
+export const mqPublishedTotal = new Counter({
+  name: "mq_published_total",
+  help: "Messages published to the report event stream",
+  labelNames: ["event_type"],
+  registers: [register],
+});
+
+export const mqProcessedTotal = new Counter({
+  name: "mq_processed_total",
+  help: "Messages processed by the report event worker",
+  labelNames: ["event_type", "result"],
+  registers: [register],
+});
+
+export const mqProcessingSeconds = new Histogram({
+  name: "mq_processing_seconds",
+  help: "Latency of report event worker handler",
+  labelNames: ["event_type"],
+  buckets: [0.01, 0.05, 0.1, 0.3, 1, 3, 10],
+  registers: [register],
+});
+
+export const mqStreamLength = new Gauge({
+  name: "mq_stream_length",
+  help: "Current length of the report event stream (backlog indicator)",
+  registers: [register],
+});

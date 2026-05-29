@@ -3,27 +3,21 @@ import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../lib/db.js";
 import {
   departmentTranslations,
-  eventTranslations,
   safetyReports,
   users,
   departments,
-  events,
 } from "@workspace/database";
 import { reportSubmitInputSchema } from "@workspace/api-contracts";
-import {
-  broadcastToOversight,
-  sendToManagerChain,
-} from "../lib/sse.js";
 import { cacheDel, statsCacheKeys } from "../lib/redis.js";
 import {
   reportSubmitTotal,
   unreportedUsersTotal,
 } from "../lib/metrics.js";
-import { getManagerChain, getDirectManager, getSubordinates } from "../lib/team.js";
-import { sendEmail, needHelpAlertEmail } from "../lib/resend.js";
+import { getSubordinates } from "../lib/team.js";
 import { isEventActive } from "./events.controller.js";
 import { isUuid } from "../middleware/validate.js";
 import { getRequestLocale, type SupportedLocale } from "../lib/locale.js";
+import { publishReportEvent } from "../lib/queue.js";
 
 // POST /api/events/:eventId/report
 export async function submitReport(req: Request, res: Response) {
@@ -85,82 +79,25 @@ export async function submitReport(req: Request, res: Response) {
   await cacheDel(...statsCacheKeys(eventId));
   reportSubmitTotal.inc({ status: parsed.data.status, result: "success" });
 
-  // Always broadcast a report_submitted event to oversight (manager/admin)
-  broadcastToOversight({
+  // Hand off side-effects (SSE fan-out + email) to the report-event stream.
+  // Keeps the HTTP path fast and absorbs traffic bursts during real incidents.
+  await publishReportEvent({
     type: "report_submitted",
     eventId,
     userId: req.user.id,
     status: parsed.data.status,
+    locale,
     timestamp: now.toISOString(),
   });
-
-  // Special-case: 「需要協助」 → fan out an SSE alert and email the direct manager.
-  // Three independent queries (event title, user+dept, manager chain, direct
-  // manager) run in parallel to keep the request snappy.
   if (parsed.data.status === "need_help") {
-    const [eventRow, userRow, managerChain, direct] = await Promise.all([
-      db
-        .select({
-          title: sql<string>`coalesce(${eventTranslations.title}, ${events.title})`,
-        })
-        .from(events)
-        .leftJoin(
-          eventTranslations,
-          and(
-            eq(eventTranslations.eventId, events.id),
-            eq(eventTranslations.locale, locale),
-          ),
-        )
-        .where(eq(events.id, eventId))
-        .limit(1)
-        .then((r) => r[0] ?? null),
-      db
-        .select({
-          name: users.name,
-          phone: users.phone,
-          departmentId: users.departmentId,
-          departmentName: sql<string | null>`coalesce(${departmentTranslations.name}, ${departments.name})`,
-        })
-        .from(users)
-        .leftJoin(departments, eq(departments.id, users.departmentId))
-        .leftJoin(
-          departmentTranslations,
-          and(
-            eq(departmentTranslations.departmentId, departments.id),
-            eq(departmentTranslations.locale, locale),
-          ),
-        )
-        .where(eq(users.id, req.user.id))
-        .limit(1)
-        .then((r) => r[0] ?? null),
-      getManagerChain(req.user.id),
-      getDirectManager(req.user.id),
-    ]);
-
-    sendToManagerChain(managerChain, {
-      type: "need_help",
+    await publishReportEvent({
+      type: "need_help_followup",
       eventId,
       userId: req.user.id,
-      userName: userRow?.name ?? req.user.email,
-      departmentName: userRow?.departmentName ?? null,
       message: parsed.data.message ?? null,
+      locale,
       timestamp: now.toISOString(),
     });
-
-    // Best-effort email to direct manager
-    if (direct && eventRow) {
-      const tpl = needHelpAlertEmail({
-        managerName: direct.name,
-        employeeName: userRow?.name ?? req.user.email,
-        eventTitle: eventRow.title,
-        message: parsed.data.message ?? null,
-        contactPhone: userRow?.phone ?? null,
-        dashboardUrl:
-          (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000") +
-          "/dashboard",
-      });
-      await sendEmail({ to: direct.email, ...tpl });
-    }
   }
 
   res.status(200).json({
