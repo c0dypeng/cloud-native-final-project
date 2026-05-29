@@ -37,6 +37,10 @@ spec:
               valueFrom: { secretKeyRef: { name: huyouan-secrets, key: JWT_SECRET } }
             - name: RESEND_API_KEY
               valueFrom: { secretKeyRef: { name: huyouan-secrets, key: RESEND_API_KEY, optional: true } }
+            # Used as the Redis Stream consumer name so XAUTOCLAIM can find a
+            # restarted pod's PEL entries by their previous consumer id.
+            - name: POD_NAME
+              valueFrom: { fieldRef: { fieldPath: metadata.name } }
           readinessProbe:
             httpGet: { path: /api/health, port: http }
             initialDelaySeconds: 5

@@ -18,6 +18,7 @@ import { isEventActive } from "./events.controller.js";
 import { isUuid } from "../middleware/validate.js";
 import { getRequestLocale, type SupportedLocale } from "../lib/locale.js";
 import { publishReportEvent } from "../lib/queue.js";
+import { logger } from "../lib/logger.js";
 
 // POST /api/events/:eventId/report
 export async function submitReport(req: Request, res: Response) {
@@ -81,23 +82,39 @@ export async function submitReport(req: Request, res: Response) {
 
   // Hand off side-effects (SSE fan-out + email) to the report-event stream.
   // Keeps the HTTP path fast and absorbs traffic bursts during real incidents.
-  await publishReportEvent({
-    type: "report_submitted",
-    eventId,
-    userId: req.user.id,
-    status: parsed.data.status,
-    locale,
-    timestamp: now.toISOString(),
-  });
-  if (parsed.data.status === "need_help") {
+  // The DB row is already committed, so a queue failure degrades to "manager
+  // sees report only after the stats refetch" rather than data loss. Surface
+  // the failure as a 503 so the client can retry the *notification*, while
+  // explicitly telling them the report itself was saved.
+  try {
     await publishReportEvent({
-      type: "need_help_followup",
+      type: "report_submitted",
       eventId,
       userId: req.user.id,
-      message: parsed.data.message ?? null,
+      status: parsed.data.status,
       locale,
       timestamp: now.toISOString(),
     });
+    if (parsed.data.status === "need_help") {
+      await publishReportEvent({
+        type: "need_help_followup",
+        eventId,
+        userId: req.user.id,
+        message: parsed.data.message ?? null,
+        locale,
+        timestamp: now.toISOString(),
+      });
+    }
+  } catch (err) {
+    logger.error(
+      { err, eventId, userId: req.user.id, status: parsed.data.status },
+      "queue publish failed after DB upsert — notifications will be missed",
+    );
+    res.status(503).json({
+      error: "Report saved, but notification dispatch failed",
+      reportId: report.id,
+    });
+    return;
   }
 
   res.status(200).json({

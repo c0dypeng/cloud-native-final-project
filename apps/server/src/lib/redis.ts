@@ -21,6 +21,24 @@ redis.on("ready", () => {
   logger.info({ url: REDIS_URL.replace(/:[^:@]*@/, ":***@") }, "redis ready");
 });
 
+// Dedicated connection for blocking stream reads. ioredis serializes commands
+// per-connection, so a BLOCKing XREADGROUP on the main client would stall every
+// concurrent XADD / cacheDel / counter operation. Keep it isolated.
+// maxRetriesPerRequest is null to let the blocking command live indefinitely.
+export const redisStreamConsumer: Redis = new Redis(REDIS_URL, {
+  lazyConnect: false,
+  maxRetriesPerRequest: null,
+  enableReadyCheck: true,
+  retryStrategy(times: number) {
+    const delay = Math.min(times * 200, 2000);
+    return delay;
+  },
+});
+
+redisStreamConsumer.on("error", (err: Error) => {
+  logger.error({ err }, "redis stream consumer connection error");
+});
+
 /**
  * Read JSON from cache, returning `null` on miss.
  */

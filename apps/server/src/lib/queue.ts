@@ -1,4 +1,4 @@
-import { redis } from "./redis.js";
+import { redis, redisStreamConsumer } from "./redis.js";
 import { logger } from "./logger.js";
 import {
   mqPublishedTotal,
@@ -36,33 +36,36 @@ async function ensureGroup(): Promise<void> {
   try {
     await redis.xgroup("CREATE", STREAM, GROUP, "$", "MKSTREAM");
     logger.info({ stream: STREAM, group: GROUP }, "consumer group created");
+    ensured = true;
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    if (!msg.includes("BUSYGROUP")) {
-      logger.warn({ err }, "xgroup create failed");
+    if (msg.includes("BUSYGROUP")) {
+      ensured = true;
+      return;
     }
+    logger.warn({ err }, "xgroup create failed; will retry on next call");
+    throw err;
   }
-  ensured = true;
 }
 
 export async function publishReportEvent(
   payload: ReportEventPayload,
 ): Promise<void> {
-  await ensureGroup();
   try {
-    await redis.xadd(
-      STREAM,
-      "MAXLEN",
-      "~",
-      String(MAX_LEN),
-      "*",
-      "payload",
-      JSON.stringify(payload),
-    );
-    mqPublishedTotal.inc({ event_type: payload.type });
-  } catch (err) {
-    logger.error({ err, type: payload.type }, "queue publish failed");
+    await ensureGroup();
+  } catch {
+    // ensureGroup logs; XADD below will MKSTREAM on its own anyway.
   }
+  await redis.xadd(
+    STREAM,
+    "MAXLEN",
+    "~",
+    String(MAX_LEN),
+    "*",
+    "payload",
+    JSON.stringify(payload),
+  );
+  mqPublishedTotal.inc({ event_type: payload.type });
 }
 
 interface WorkerOptions {
@@ -84,7 +87,7 @@ export async function startReportWorker(opts: WorkerOptions): Promise<void> {
 
   while (!stopRequested) {
     try {
-      const res = (await redis.xreadgroup(
+      const res = (await redisStreamConsumer.xreadgroup(
         "GROUP",
         GROUP,
         consumerName,
@@ -103,6 +106,7 @@ export async function startReportWorker(opts: WorkerOptions): Promise<void> {
         );
       }
     } catch (err) {
+      if (stopRequested) return;
       logger.error({ err }, "xreadgroup failed; backing off 1s");
       await sleep(1_000);
     }
@@ -129,6 +133,7 @@ async function processEntry(
     payload = JSON.parse(raw) as ReportEventPayload;
   } catch (err) {
     logger.warn({ err, entryId }, "malformed queue payload — acking");
+    mqProcessedTotal.inc({ event_type: "unknown", result: "malformed" });
     await redis.xack(STREAM, GROUP, entryId);
     return;
   }
@@ -151,7 +156,10 @@ async function claimIdleLoop(
 ): Promise<void> {
   while (!stopRequested) {
     await sleep(30_000);
+    if (stopRequested) return;
     try {
+      // xautoclaim doesn't block, runs on the main client to keep the consumer
+      // connection free for its BLOCKing XREADGROUP.
       const res = (await redis.xautoclaim(
         STREAM,
         GROUP,
@@ -185,7 +193,16 @@ async function streamLengthLoop(): Promise<void> {
 }
 
 export function stopReportWorker(): void {
+  if (stopRequested) return;
   stopRequested = true;
+  // Aborts the BLOCKing XREADGROUP so the worker loop exits within ms instead
+  // of waiting up to `blockMs`. The other clients are closed by the server's
+  // shutdown path.
+  try {
+    redisStreamConsumer.disconnect();
+  } catch {
+    // best-effort
+  }
 }
 
 function sleep(ms: number): Promise<void> {
