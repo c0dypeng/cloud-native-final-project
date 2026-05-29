@@ -9,6 +9,7 @@ import {
 } from "@workspace/api-contracts";
 import { isUuid } from "../middleware/validate.js";
 import { getRequestLocale } from "../lib/locale.js";
+import { isForeignKeyViolation } from "../lib/db-errors.js";
 
 function serialize(row: {
   id: string;
@@ -109,15 +110,23 @@ export async function createDepartment(req: Request, res: Response) {
       .json({ error: "Validation failed", details: parsed.error.flatten() });
     return;
   }
-  const [created] = await db
-    .insert(departments)
-    .values({ name: parsed.data.name, parentId: parsed.data.parentId ?? null })
-    .returning();
-  if (!created) {
-    res.status(500).json({ error: "Failed to create department" });
-    return;
+  try {
+    const [created] = await db
+      .insert(departments)
+      .values({ name: parsed.data.name, parentId: parsed.data.parentId ?? null })
+      .returning();
+    if (!created) {
+      res.status(500).json({ error: "Failed to create department" });
+      return;
+    }
+    res.status(201).json({ department: serialize(created) });
+  } catch (err) {
+    if (isForeignKeyViolation(err)) {
+      res.status(400).json({ error: "Parent department does not exist" });
+      return;
+    }
+    throw err;
   }
-  res.status(201).json({ department: serialize(created) });
 }
 
 // PATCH /api/departments/:id
@@ -138,16 +147,24 @@ export async function updateDepartment(req: Request, res: Response) {
     res.status(400).json({ error: "Department cannot be its own parent" });
     return;
   }
-  const [updated] = await db
-    .update(departments)
-    .set(parsed.data)
-    .where(eq(departments.id, id))
-    .returning();
-  if (!updated) {
-    res.status(404).json({ error: "Department not found" });
-    return;
+  try {
+    const [updated] = await db
+      .update(departments)
+      .set(parsed.data)
+      .where(eq(departments.id, id))
+      .returning();
+    if (!updated) {
+      res.status(404).json({ error: "Department not found" });
+      return;
+    }
+    res.json({ department: serialize(updated) });
+  } catch (err) {
+    if (isForeignKeyViolation(err)) {
+      res.status(400).json({ error: "Parent department does not exist" });
+      return;
+    }
+    throw err;
   }
-  res.json({ department: serialize(updated) });
 }
 
 // DELETE /api/departments/:id

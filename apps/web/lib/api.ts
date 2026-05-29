@@ -1,5 +1,6 @@
 import type { ZodTypeAny, z } from "zod";
 import { ApiResponseError } from "@workspace/api-contracts";
+import { defaultLocale, LOCALE_COOKIE } from "@/i18n/config";
 
 /**
  * Browser-facing API base URL. Empty string → same origin, requests go to
@@ -7,7 +8,6 @@ import { ApiResponseError } from "@workspace/api-contracts";
  * Server-side code should import API_URL from utils/auth/server instead.
  */
 export const PUBLIC_API_URL = "";
-const LOCALE_COOKIE = "huyouan-locale";
 
 interface ApiFetchOptions extends Omit<RequestInit, "body"> {
   body?: unknown;
@@ -66,9 +66,16 @@ export { ApiResponseError };
 
 function browserLocaleHeader(): Record<string, string> {
   if (typeof document === "undefined") return {};
-  const locale = document.cookie
+  const cookieLocale = document.cookie
     .split("; ")
     .find((part) => part.startsWith(`${LOCALE_COOKIE}=`))
     ?.split("=")[1];
-  return locale ? { "x-locale": decodeURIComponent(locale) } : {};
+  // Fall back to the app's default locale (what next-intl renders when no
+  // cookie is set) instead of letting the backend guess from Accept-Language —
+  // otherwise server-localized data (e.g. department names) comes back in the
+  // browser's language while the UI is in the default locale.
+  const locale = cookieLocale
+    ? decodeURIComponent(cookieLocale)
+    : defaultLocale;
+  return { "x-locale": locale };
 }

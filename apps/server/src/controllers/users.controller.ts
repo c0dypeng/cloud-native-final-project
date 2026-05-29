@@ -10,6 +10,7 @@ import {
   userListQuerySchema,
 } from "@workspace/api-contracts";
 import { isUuid } from "../middleware/validate.js";
+import { isUniqueViolation, isForeignKeyViolation } from "../lib/db-errors.js";
 import { getRequestLocale } from "../lib/locale.js";
 
 function serializeUser(row: {
@@ -147,9 +148,15 @@ export async function createUser(req: Request, res: Response) {
     }
     res.status(201).json({ user: { id: created.id, email: created.email } });
   } catch (err) {
-    const error = err as { code?: string; constraint?: string };
-    if (error.code === "23505") {
+    // drizzle wraps the PG error, so the code is on err.cause — classify via
+    // the helper rather than err.code (which is undefined and would let the
+    // rejection escape and crash the process).
+    if (isUniqueViolation(err)) {
       res.status(409).json({ error: "Email already in use" });
+      return;
+    }
+    if (isForeignKeyViolation(err)) {
+      res.status(400).json({ error: "Invalid department or manager" });
       return;
     }
     throw err;
@@ -177,17 +184,29 @@ export async function updateUser(req: Request, res: Response) {
     return;
   }
 
-  const [updated] = await db
-    .update(users)
-    .set(parsed.data)
-    .where(eq(users.id, id))
-    .returning();
+  try {
+    const [updated] = await db
+      .update(users)
+      .set(parsed.data)
+      .where(eq(users.id, id))
+      .returning();
 
-  if (!updated) {
-    res.status(404).json({ error: "User not found" });
-    return;
+    if (!updated) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+    res.json({ user: { id: updated.id } });
+  } catch (err) {
+    if (isUniqueViolation(err)) {
+      res.status(409).json({ error: "Email already in use" });
+      return;
+    }
+    if (isForeignKeyViolation(err)) {
+      res.status(400).json({ error: "Invalid department or manager" });
+      return;
+    }
+    throw err;
   }
-  res.json({ user: { id: updated.id } });
 }
 
 // DELETE /api/users/:id  (soft delete)

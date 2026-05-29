@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { Button } from "@workspace/ui/components/button";
 import {
   Card,
@@ -8,12 +9,14 @@ import {
   CardTitle,
 } from "@workspace/ui/components/card";
 
-export default function ErrorPage({
+export default async function ErrorPage({
   searchParams,
 }: {
-  searchParams: { message?: string };
+  searchParams: Promise<{ message?: string }>;
 }) {
-  const errorMessage = searchParams.message || "抱歉，您的身份驗證出現問題";
+  const t = await getTranslations("error");
+  const { message } = await searchParams;
+  const errorMessage = message || t("fallback");
 
   return (
     <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-12">
@@ -21,28 +24,19 @@ export default function ErrorPage({
         <Card>
           <CardHeader>
             <CardTitle className="text-3xl text-destructive">
-              驗證錯誤
+              {t("title")}
             </CardTitle>
             <CardDescription className="text-base">
-              請查看以下錯誤並重試
+              {t("description")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-5">
               <p className="text-base text-destructive">{errorMessage}</p>
             </div>
-            <div className="flex gap-3">
-              <Button asChild className="flex-1 h-11 text-base">
-                <Link href="/login">返回登入</Link>
-              </Button>
-              <Button
-                asChild
-                variant="outline"
-                className="flex-1 h-11 text-base"
-              >
-                <Link href="/signup">註冊</Link>
-              </Button>
-            </div>
+            <Button asChild className="w-full h-11 text-base">
+              <Link href="/login">{t("backToLogin")}</Link>
+            </Button>
           </CardContent>
         </Card>
       </div>

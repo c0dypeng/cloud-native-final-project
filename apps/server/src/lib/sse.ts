@@ -99,7 +99,10 @@ function publish(env: Envelope): void {
 function send(conn: Connection, event: SseEvent): void {
   if (conn.dropped) return;
   try {
-    conn.res.write(`event: ${event.type}\n`);
+    // Emit as the default (unnamed) "message" event so the browser's
+    // EventSource.onmessage handler fires. Clients discriminate on the
+    // payload's `type` field, so a named SSE event (`event: <type>`) would
+    // silently never reach onmessage and break all real-time updates.
     conn.res.write(`data: ${JSON.stringify(event)}\n\n`);
   } catch (err) {
     logger.warn({ err }, "sse write failed; dropping connection");
